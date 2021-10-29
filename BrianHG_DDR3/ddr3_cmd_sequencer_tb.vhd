@@ -78,6 +78,10 @@ architecture sim of ddr3_cmd_sequencer_tb is
         variable r : string(1 to l);
         variable ind : natural;
     begin
+        assert l >= s'length report "cannot pad string with length " &
+                                    integer'image(s'length) & " to length " &
+                                    integer'image(l) & " without truncation"
+                                    severity error;
         ind := 1;
         for i in s'range loop
             r(ind) := s(i);
@@ -94,9 +98,34 @@ architecture sim of ddr3_cmd_sequencer_tb is
     --
     -- tx the ddr3 command_in
     --
-    procedure tx_ddr3_cmd(variable ln_in : line; line_number : natural) is
+    procedure tx_ddr3_cmd(variable ln_in : line; line_number : natural; start : natural) is
+        type cmd is (C_REFRESH, C_AWAIT, C_OUTENA, C_READ, C_WRITE, C_DELAY);
+        type assoc is record
+            keyword     : string(1 to 13);
+            selector    : cmd;
+        end record;
+        type assoc_array is array(natural range <>) of assoc;
+        constant commands : assoc_array :=
+                              (("REFRESH      ", C_REFRESH),
+                               ("AWAIT        ", C_AWAIT),
+                               ("OUTENA       ", C_OUTENA),
+                               ("READ         ", C_READ),
+                               ("WRITE        ", C_WRITE),
+                               ("DELAY        ", C_DELAY));
+        variable s      : natural;
     begin
-
+        s := start;
+        assert false report "ln_in=" & ln_in.all severity note;
+        for i in s to ln_in.all'right loop
+            if ln_in.all(i) = ' ' then
+                s := i + 1;
+                exit;
+            end if;
+        end loop;
+        
+        for i in s to ln_in.all'right loop
+            report character'image(ln_in.all(i)) severity note;
+        end loop;
     end procedure tx_ddr3_cmd;
 
     --
@@ -145,7 +174,8 @@ architecture sim of ddr3_cmd_sequencer_tb is
             return C_NO_COMMAND;
         end function to_command;
         
-        procedure parse_word(variable ln : line; start, length : natural; str : out string) is
+        procedure parse_word(variable ln : line; start, length : natural; str : out string;
+                             endpos : out natural) is
             variable s, e   : natural;
         begin
             for i in ln'range loop
@@ -165,7 +195,8 @@ architecture sim of ddr3_cmd_sequencer_tb is
                 str(e - s + 2 to str'length) := (others => ' ');
             else
                 str(1 to length) := "             ";
-            end if;  
+            end if;
+            endpos := e;  
         end procedure parse_word;
         
         variable fin_running,
@@ -182,6 +213,7 @@ architecture sim of ddr3_cmd_sequencer_tb is
         variable s                  : string(1 to 13);
         variable c                  : cmd_selector;
         variable cmd                : string(1 to 13);
+        variable endpos             : natural;
     begin
         line_number := 1;
         -- fout := output;
@@ -192,14 +224,14 @@ architecture sim of ddr3_cmd_sequencer_tb is
             -- assert false report "in_ln=" & in_ln.all severity note;
            
             if in_ln /= null then
-                parse_word(in_ln, 1, 13, cmd);
+                parse_word(in_ln, 1, 13, cmd, endpos);
                 c := to_command(cmd, 13);
                 assert false report "cmd=" & cmd_selector'image(c) severity note;
                 
                 case c is
                     when C_CMD =>
                         assert false report "CMD requested" severity note;
-                        tx_ddr3_cmd(in_ln, line_number);
+                        tx_ddr3_cmd(in_ln, line_number, endpos);
                     when C_RESET =>
                         --script_line := line_number;
                         --script_cmd := command_in;

@@ -1,0 +1,389 @@
+------------------------------------------------------------
+Timing Analyzer Summary
+------------------------------------------------------------
+
+Type  : Slow 1200mV 85C Model Setup 'u_vpg|u_pll|altpll_component|auto_generated|pll1|clk[0]'
+Slack : -6.156
+TNS   : -166.133
+
+Type  : Slow 1200mV 85C Model Setup 'I2C_HDMI_Config:u_I2C_HDMI_Config|mI2C_CTRL_CLK'
+Slack : -4.209
+TNS   : -152.985
+
+Type  : Slow 1200mV 85C Model Setup 'MAX10_CLK1_50'
+Slack : -2.442
+TNS   : -2.442
+
+Type  : Slow 1200mV 85C Model Setup 'BHG_DDR3_CONTROLLER_top|DDR3_PLL|DDR3_PLL5|auto_generated|pll1|clk[4]'
+Slack : -1.856
+TNS   : -3.578
+
+Type  : Slow 1200mV 85C Model Setup 'BHG_DDR3_CONTROLLER_top|DDR3_PLL|DDR3_PLL5|auto_generated|pll1|clk[2]'
+Slack : 0.521
+TNS   : 0.000
+
+Type  : Slow 1200mV 85C Model Setup 'BHG_DDR3_CONTROLLER_top|DDR3_PLL|DDR3_PLL5|auto_generated|pll1|clk[0]'
+Slack : 0.964
+TNS   : 0.000
+
+Type  : Slow 1200mV 85C Model Setup 'BHG_DDR3_CONTROLLER_top|DDR3_PLL|DDR3_PLL5|auto_generated|pll1|clk[1]'
+Slack : 1.004
+TNS   : 0.000
+
+Type  : Slow 1200mV 85C Model Setup 'BHG_DDR3_CONTROLLER_top|DDR3_PLL|DDR3_PLL5|auto_generated|pll1|clk[3]'
+Slack : 1.443
+TNS   : 0.000
+
+Type  : Slow 1200mV 85C Model Hold 'MAX10_CLK1_50'
+Slack : -3.099
+TNS   : -11.133
+
+Type  : Slow 1200mV 85C Model Hold 'BHG_DDR3_CONTROLLER_top|DDR3_PLL|DDR3_PLL5|auto_generated|pll1|clk[3]'
+Slack : 0.271
+TNS   : 0.000
+
+Type  : Slow 1200mV 85C Model Hold 'BHG_DDR3_CONTROLLER_top|DDR3_PLL|DDR3_PLL5|auto_generated|pll1|clk[4]'
+Slack : 0.275
+TNS   : 0.000
+
+Type  : Slow 1200mV 85C Model Hold 'I2C_HDMI_Config:u_I2C_HDMI_Config|mI2C_CTRL_CLK'
+Slack : 0.355
+TNS   : 0.000
+
+Type  : Slow 1200mV 85C Model Hold 'u_vpg|u_pll|altpll_component|auto_generated|pll1|clk[0]'
+Slack : 0.373
+TNS   : 0.000
+
+Type  : Slow 1200mV 85C Model Hold 'BHG_DDR3_CONTROLLER_top|DDR3_PLL|DDR3_PLL5|auto_generated|pll1|clk[2]'
+Slack : 0.419
+TNS   : 0.000
+
+Type  : Slow 1200mV 85C Model Hold 'BHG_DDR3_CONTROLLER_top|DDR3_PLL|DDR3_PLL5|auto_generated|pll1|clk[0]'
+Slack : 0.420
+TNS   : 0.000
+
+Type  : Slow 1200mV 85C Model Hold 'BHG_DDR3_CONTROLLER_top|DDR3_PLL|DDR3_PLL5|auto_generated|pll1|clk[1]'
+Slack : 0.451
+TNS   : 0.000
+
+Type  : Slow 1200mV 85C Model Recovery 'u_vpg|u_pll|altpll_component|auto_generated|pll1|clk[0]'
+Slack : -6.881
+TNS   : -275.208
+
+Type  : Slow 1200mV 85C Model Recovery 'I2C_HDMI_Config:u_I2C_HDMI_Config|mI2C_CTRL_CLK'
+Slack : -2.905
+TNS   : -59.346
+
+Type  : Slow 1200mV 85C Model Recovery 'BHG_DDR3_CONTROLLER_top|DDR3_PLL|DDR3_PLL5|auto_generated|pll1|clk[4]'
+Slack : 7.292
+TNS   : 0.000
+
+Type  : Slow 1200mV 85C Model Recovery 'MAX10_CLK1_50'
+Slack : 24.454
+TNS   : 0.000
+
+Type  : Slow 1200mV 85C Model Removal 'MAX10_CLK1_50'
+Slack : 1.495
+TNS   : 0.000
+
+Type  : Slow 1200mV 85C Model Removal 'I2C_HDMI_Config:u_I2C_HDMI_Config|mI2C_CTRL_CLK'
+Slack : 1.759
+TNS   : 0.000
+
+Type  : Slow 1200mV 85C Model Removal 'BHG_DDR3_CONTROLLER_top|DDR3_PLL|DDR3_PLL5|auto_generated|pll1|clk[4]'
+Slack : 5.464
+TNS   : 0.000
+
+Type  : Slow 1200mV 85C Model Removal 'u_vpg|u_pll|altpll_component|auto_generated|pll1|clk[0]'
+Slack : 6.254
+TNS   : 0.000
+
+Type  : Slow 1200mV 85C Model Minimum Pulse Width 'I2C_HDMI_Config:u_I2C_HDMI_Config|mI2C_CTRL_CLK'
+Slack : -1.222
+TNS   : -68.432
+
+Type  : Slow 1200mV 85C Model Minimum Pulse Width 'BHG_DDR3_CONTROLLER_top|DDR3_PLL|DDR3_PLL5|auto_generated|pll1|clk[2]'
+Slack : 0.865
+TNS   : 0.000
+
+Type  : Slow 1200mV 85C Model Minimum Pulse Width 'BHG_DDR3_CONTROLLER_top|DDR3_PLL|DDR3_PLL5|auto_generated|pll1|clk[0]'
+Slack : 1.111
+TNS   : 0.000
+
+Type  : Slow 1200mV 85C Model Minimum Pulse Width 'BHG_DDR3_CONTROLLER_top|DDR3_PLL|DDR3_PLL5|auto_generated|pll1|clk[1]'
+Slack : 1.111
+TNS   : 0.000
+
+Type  : Slow 1200mV 85C Model Minimum Pulse Width 'BHG_DDR3_CONTROLLER_top|DDR3_PLL|DDR3_PLL5|auto_generated|pll1|clk[3]'
+Slack : 2.996
+TNS   : 0.000
+
+Type  : Slow 1200mV 85C Model Minimum Pulse Width 'u_vpg|u_pll|altpll_component|auto_generated|pll1|clk[0]'
+Slack : 4.181
+TNS   : 0.000
+
+Type  : Slow 1200mV 85C Model Minimum Pulse Width 'BHG_DDR3_CONTROLLER_top|DDR3_PLL|DDR3_PLL5|auto_generated|pll1|clk[4]'
+Slack : 5.509
+TNS   : 0.000
+
+Type  : Slow 1200mV 85C Model Minimum Pulse Width 'MAX10_CLK1_50'
+Slack : 12.991
+TNS   : 0.000
+
+Type  : Slow 1200mV 0C Model Setup 'u_vpg|u_pll|altpll_component|auto_generated|pll1|clk[0]'
+Slack : -5.582
+TNS   : -150.658
+
+Type  : Slow 1200mV 0C Model Setup 'I2C_HDMI_Config:u_I2C_HDMI_Config|mI2C_CTRL_CLK'
+Slack : -3.702
+TNS   : -138.276
+
+Type  : Slow 1200mV 0C Model Setup 'MAX10_CLK1_50'
+Slack : -2.170
+TNS   : -2.170
+
+Type  : Slow 1200mV 0C Model Setup 'BHG_DDR3_CONTROLLER_top|DDR3_PLL|DDR3_PLL5|auto_generated|pll1|clk[4]'
+Slack : -1.714
+TNS   : -3.308
+
+Type  : Slow 1200mV 0C Model Setup 'BHG_DDR3_CONTROLLER_top|DDR3_PLL|DDR3_PLL5|auto_generated|pll1|clk[2]'
+Slack : 0.594
+TNS   : 0.000
+
+Type  : Slow 1200mV 0C Model Setup 'BHG_DDR3_CONTROLLER_top|DDR3_PLL|DDR3_PLL5|auto_generated|pll1|clk[0]'
+Slack : 1.159
+TNS   : 0.000
+
+Type  : Slow 1200mV 0C Model Setup 'BHG_DDR3_CONTROLLER_top|DDR3_PLL|DDR3_PLL5|auto_generated|pll1|clk[1]'
+Slack : 1.180
+TNS   : 0.000
+
+Type  : Slow 1200mV 0C Model Setup 'BHG_DDR3_CONTROLLER_top|DDR3_PLL|DDR3_PLL5|auto_generated|pll1|clk[3]'
+Slack : 1.576
+TNS   : 0.000
+
+Type  : Slow 1200mV 0C Model Hold 'MAX10_CLK1_50'
+Slack : -2.370
+TNS   : -8.319
+
+Type  : Slow 1200mV 0C Model Hold 'BHG_DDR3_CONTROLLER_top|DDR3_PLL|DDR3_PLL5|auto_generated|pll1|clk[4]'
+Slack : 0.226
+TNS   : 0.000
+
+Type  : Slow 1200mV 0C Model Hold 'BHG_DDR3_CONTROLLER_top|DDR3_PLL|DDR3_PLL5|auto_generated|pll1|clk[3]'
+Slack : 0.228
+TNS   : 0.000
+
+Type  : Slow 1200mV 0C Model Hold 'u_vpg|u_pll|altpll_component|auto_generated|pll1|clk[0]'
+Slack : 0.313
+TNS   : 0.000
+
+Type  : Slow 1200mV 0C Model Hold 'I2C_HDMI_Config:u_I2C_HDMI_Config|mI2C_CTRL_CLK'
+Slack : 0.320
+TNS   : 0.000
+
+Type  : Slow 1200mV 0C Model Hold 'BHG_DDR3_CONTROLLER_top|DDR3_PLL|DDR3_PLL5|auto_generated|pll1|clk[0]'
+Slack : 0.347
+TNS   : 0.000
+
+Type  : Slow 1200mV 0C Model Hold 'BHG_DDR3_CONTROLLER_top|DDR3_PLL|DDR3_PLL5|auto_generated|pll1|clk[2]'
+Slack : 0.347
+TNS   : 0.000
+
+Type  : Slow 1200mV 0C Model Hold 'BHG_DDR3_CONTROLLER_top|DDR3_PLL|DDR3_PLL5|auto_generated|pll1|clk[1]'
+Slack : 0.383
+TNS   : 0.000
+
+Type  : Slow 1200mV 0C Model Recovery 'u_vpg|u_pll|altpll_component|auto_generated|pll1|clk[0]'
+Slack : -6.249
+TNS   : -249.949
+
+Type  : Slow 1200mV 0C Model Recovery 'I2C_HDMI_Config:u_I2C_HDMI_Config|mI2C_CTRL_CLK'
+Slack : -2.644
+TNS   : -54.150
+
+Type  : Slow 1200mV 0C Model Recovery 'BHG_DDR3_CONTROLLER_top|DDR3_PLL|DDR3_PLL5|auto_generated|pll1|clk[4]'
+Slack : 7.862
+TNS   : 0.000
+
+Type  : Slow 1200mV 0C Model Recovery 'MAX10_CLK1_50'
+Slack : 24.662
+TNS   : 0.000
+
+Type  : Slow 1200mV 0C Model Removal 'MAX10_CLK1_50'
+Slack : 1.391
+TNS   : 0.000
+
+Type  : Slow 1200mV 0C Model Removal 'I2C_HDMI_Config:u_I2C_HDMI_Config|mI2C_CTRL_CLK'
+Slack : 1.634
+TNS   : 0.000
+
+Type  : Slow 1200mV 0C Model Removal 'BHG_DDR3_CONTROLLER_top|DDR3_PLL|DDR3_PLL5|auto_generated|pll1|clk[4]'
+Slack : 4.989
+TNS   : 0.000
+
+Type  : Slow 1200mV 0C Model Removal 'u_vpg|u_pll|altpll_component|auto_generated|pll1|clk[0]'
+Slack : 5.658
+TNS   : 0.000
+
+Type  : Slow 1200mV 0C Model Minimum Pulse Width 'I2C_HDMI_Config:u_I2C_HDMI_Config|mI2C_CTRL_CLK'
+Slack : -1.222
+TNS   : -68.432
+
+Type  : Slow 1200mV 0C Model Minimum Pulse Width 'BHG_DDR3_CONTROLLER_top|DDR3_PLL|DDR3_PLL5|auto_generated|pll1|clk[2]'
+Slack : 0.865
+TNS   : 0.000
+
+Type  : Slow 1200mV 0C Model Minimum Pulse Width 'BHG_DDR3_CONTROLLER_top|DDR3_PLL|DDR3_PLL5|auto_generated|pll1|clk[0]'
+Slack : 1.111
+TNS   : 0.000
+
+Type  : Slow 1200mV 0C Model Minimum Pulse Width 'BHG_DDR3_CONTROLLER_top|DDR3_PLL|DDR3_PLL5|auto_generated|pll1|clk[1]'
+Slack : 1.111
+TNS   : 0.000
+
+Type  : Slow 1200mV 0C Model Minimum Pulse Width 'BHG_DDR3_CONTROLLER_top|DDR3_PLL|DDR3_PLL5|auto_generated|pll1|clk[3]'
+Slack : 3.013
+TNS   : 0.000
+
+Type  : Slow 1200mV 0C Model Minimum Pulse Width 'u_vpg|u_pll|altpll_component|auto_generated|pll1|clk[0]'
+Slack : 4.192
+TNS   : 0.000
+
+Type  : Slow 1200mV 0C Model Minimum Pulse Width 'BHG_DDR3_CONTROLLER_top|DDR3_PLL|DDR3_PLL5|auto_generated|pll1|clk[4]'
+Slack : 5.488
+TNS   : 0.000
+
+Type  : Slow 1200mV 0C Model Minimum Pulse Width 'MAX10_CLK1_50'
+Slack : 13.011
+TNS   : 0.000
+
+Type  : Fast 1200mV 0C Model Setup 'u_vpg|u_pll|altpll_component|auto_generated|pll1|clk[0]'
+Slack : -3.237
+TNS   : -86.963
+
+Type  : Fast 1200mV 0C Model Setup 'I2C_HDMI_Config:u_I2C_HDMI_Config|mI2C_CTRL_CLK'
+Slack : -1.765
+TNS   : -63.484
+
+Type  : Fast 1200mV 0C Model Setup 'MAX10_CLK1_50'
+Slack : -1.292
+TNS   : -1.292
+
+Type  : Fast 1200mV 0C Model Setup 'BHG_DDR3_CONTROLLER_top|DDR3_PLL|DDR3_PLL5|auto_generated|pll1|clk[4]'
+Slack : -0.920
+TNS   : -1.757
+
+Type  : Fast 1200mV 0C Model Setup 'BHG_DDR3_CONTROLLER_top|DDR3_PLL|DDR3_PLL5|auto_generated|pll1|clk[2]'
+Slack : 1.037
+TNS   : 0.000
+
+Type  : Fast 1200mV 0C Model Setup 'BHG_DDR3_CONTROLLER_top|DDR3_PLL|DDR3_PLL5|auto_generated|pll1|clk[1]'
+Slack : 1.874
+TNS   : 0.000
+
+Type  : Fast 1200mV 0C Model Setup 'BHG_DDR3_CONTROLLER_top|DDR3_PLL|DDR3_PLL5|auto_generated|pll1|clk[0]'
+Slack : 2.130
+TNS   : 0.000
+
+Type  : Fast 1200mV 0C Model Setup 'BHG_DDR3_CONTROLLER_top|DDR3_PLL|DDR3_PLL5|auto_generated|pll1|clk[3]'
+Slack : 2.354
+TNS   : 0.000
+
+Type  : Fast 1200mV 0C Model Hold 'MAX10_CLK1_50'
+Slack : -1.528
+TNS   : -5.524
+
+Type  : Fast 1200mV 0C Model Hold 'BHG_DDR3_CONTROLLER_top|DDR3_PLL|DDR3_PLL5|auto_generated|pll1|clk[4]'
+Slack : 0.129
+TNS   : 0.000
+
+Type  : Fast 1200mV 0C Model Hold 'BHG_DDR3_CONTROLLER_top|DDR3_PLL|DDR3_PLL5|auto_generated|pll1|clk[3]'
+Slack : 0.133
+TNS   : 0.000
+
+Type  : Fast 1200mV 0C Model Hold 'I2C_HDMI_Config:u_I2C_HDMI_Config|mI2C_CTRL_CLK'
+Slack : 0.165
+TNS   : 0.000
+
+Type  : Fast 1200mV 0C Model Hold 'u_vpg|u_pll|altpll_component|auto_generated|pll1|clk[0]'
+Slack : 0.181
+TNS   : 0.000
+
+Type  : Fast 1200mV 0C Model Hold 'BHG_DDR3_CONTROLLER_top|DDR3_PLL|DDR3_PLL5|auto_generated|pll1|clk[0]'
+Slack : 0.199
+TNS   : 0.000
+
+Type  : Fast 1200mV 0C Model Hold 'BHG_DDR3_CONTROLLER_top|DDR3_PLL|DDR3_PLL5|auto_generated|pll1|clk[2]'
+Slack : 0.208
+TNS   : 0.000
+
+Type  : Fast 1200mV 0C Model Hold 'BHG_DDR3_CONTROLLER_top|DDR3_PLL|DDR3_PLL5|auto_generated|pll1|clk[1]'
+Slack : 0.216
+TNS   : 0.000
+
+Type  : Fast 1200mV 0C Model Recovery 'u_vpg|u_pll|altpll_component|auto_generated|pll1|clk[0]'
+Slack : -3.676
+TNS   : -147.003
+
+Type  : Fast 1200mV 0C Model Recovery 'I2C_HDMI_Config:u_I2C_HDMI_Config|mI2C_CTRL_CLK'
+Slack : -1.480
+TNS   : -30.212
+
+Type  : Fast 1200mV 0C Model Recovery 'BHG_DDR3_CONTROLLER_top|DDR3_PLL|DDR3_PLL5|auto_generated|pll1|clk[4]'
+Slack : 10.119
+TNS   : 0.000
+
+Type  : Fast 1200mV 0C Model Recovery 'MAX10_CLK1_50'
+Slack : 25.556
+TNS   : 0.000
+
+Type  : Fast 1200mV 0C Model Removal 'MAX10_CLK1_50'
+Slack : 0.708
+TNS   : 0.000
+
+Type  : Fast 1200mV 0C Model Removal 'I2C_HDMI_Config:u_I2C_HDMI_Config|mI2C_CTRL_CLK'
+Slack : 0.841
+TNS   : 0.000
+
+Type  : Fast 1200mV 0C Model Removal 'BHG_DDR3_CONTROLLER_top|DDR3_PLL|DDR3_PLL5|auto_generated|pll1|clk[4]'
+Slack : 2.784
+TNS   : 0.000
+
+Type  : Fast 1200mV 0C Model Removal 'u_vpg|u_pll|altpll_component|auto_generated|pll1|clk[0]'
+Slack : 3.125
+TNS   : 0.000
+
+Type  : Fast 1200mV 0C Model Minimum Pulse Width 'I2C_HDMI_Config:u_I2C_HDMI_Config|mI2C_CTRL_CLK'
+Slack : -1.000
+TNS   : -56.000
+
+Type  : Fast 1200mV 0C Model Minimum Pulse Width 'BHG_DDR3_CONTROLLER_top|DDR3_PLL|DDR3_PLL5|auto_generated|pll1|clk[2]'
+Slack : 1.313
+TNS   : 0.000
+
+Type  : Fast 1200mV 0C Model Minimum Pulse Width 'BHG_DDR3_CONTROLLER_top|DDR3_PLL|DDR3_PLL5|auto_generated|pll1|clk[0]'
+Slack : 1.333
+TNS   : 0.000
+
+Type  : Fast 1200mV 0C Model Minimum Pulse Width 'BHG_DDR3_CONTROLLER_top|DDR3_PLL|DDR3_PLL5|auto_generated|pll1|clk[1]'
+Slack : 1.333
+TNS   : 0.000
+
+Type  : Fast 1200mV 0C Model Minimum Pulse Width 'BHG_DDR3_CONTROLLER_top|DDR3_PLL|DDR3_PLL5|auto_generated|pll1|clk[3]'
+Slack : 3.045
+TNS   : 0.000
+
+Type  : Fast 1200mV 0C Model Minimum Pulse Width 'u_vpg|u_pll|altpll_component|auto_generated|pll1|clk[0]'
+Slack : 4.215
+TNS   : 0.000
+
+Type  : Fast 1200mV 0C Model Minimum Pulse Width 'BHG_DDR3_CONTROLLER_top|DDR3_PLL|DDR3_PLL5|auto_generated|pll1|clk[4]'
+Slack : 5.621
+TNS   : 0.000
+
+Type  : Fast 1200mV 0C Model Minimum Pulse Width 'MAX10_CLK1_50'
+Slack : 12.803
+TNS   : 0.000
+
+------------------------------------------------------------
