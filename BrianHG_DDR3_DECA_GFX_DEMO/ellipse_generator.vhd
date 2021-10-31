@@ -283,9 +283,9 @@ begin
                         sub_function <= sub_function + 1;
                         
                     when 5 =>
-                        px <= px + ry2 - alu_mult_y(BITS_RAD * 3 - 1 downto 0);         -- make px = px + ry2 - (rx2 * ry)
+                        px <= px + ry2 - alu_mult_y(BITS_RAD * 3 - 1 downto 0);                 -- make px = px + ry2 - (rx2 * ry)
                         -- step 5, store computed rx2 * y
-                        py <= resize(shift_left(alu_mult_y(BITS_RAD * 3 - 1 downto 0), 1), py'length);        -- store py = (ry * rx2) * 2
+                        py <= shift_left(resize(alu_mult_y((BITS_RAD - 1) * 3 - 1 downto 0), py'length), 1);       -- store py = (ry * rx2) * 2
                         sub_function <= sub_function + 1;
                     
                     when 6 =>
@@ -305,13 +305,13 @@ begin
                                 -- drawing the line *** WARNING, was originally less than equal to  <=, but this rendered an extra pixel
                                 pixel_data_rdy_int <= '1';          -- pixel data ready
                                 x <= x + 1;
-                                px <= resize(px + (ry2 * 2), px'length);
+                                px <= px + shift_left(ry2, 1);
                                 if inv and filled then
                                     freeze <= '1';
                                 end if;
                                 
                                 if p <= 0 then
-                                    p <= p + ry2 + px + shift_left(ry2, 1);
+                                    p <= p + ry2 + (px + shift_left(ry2, 1));
                                 else
                                     if not inv and filled then
                                         freeze <= '1';
