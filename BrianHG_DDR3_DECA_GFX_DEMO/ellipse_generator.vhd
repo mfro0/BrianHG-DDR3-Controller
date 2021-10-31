@@ -26,7 +26,7 @@
     generic
     (
         BITS_RES        : natural := 12;            -- Coordinates IO port bits. 12 = -2048 to + 2047
-        BITS_RAD        : natural := 11;            -- should be BITS_RES - 1 - Bits for internal maximum radius. Since the radius is positive only, 1 bit less is sufficient
+        BITS_RAD        : natural := 11;            -- should be (BITS_RES - 1) - Bits for internal maximum radius. Since the radius is positive only, 1 bit less is sufficient
         USE_ALTERA_IP   : natural := 1              -- Selects if Altera's LPM_MULT should be used
     );
     port
@@ -55,8 +55,8 @@ end entity ellipse_generator;
 
 architecture rtl of ellipse_generator is
     signal draw_line            : std_ulogic := '0';
-    signal quadrant_latch       : integer range 0 to 3;                     -- this logic latches which quadrant to draw when run is issued
-    signal sub_function         : integer range 0 to 15;                    -- this logic defines which step is running, i.e. first setup for first 45 degrees
+    signal quadrant_latch       : integer range 0 to 3 := 0;                -- this logic latches which quadrant to draw when run is issued
+    signal sub_function         : integer range 0 to 15 := 0;               -- this logic defines which step is running, i.e. first setup for first 45 degrees
     signal inv                  : std_ulogic := '0';                        -- draw the first 45 degrees if the radius is not 0, finish the ellipse if the remaining
     signal draw_flat            : std_ulogic := '0';                        -- radius <= 1, setup for second 45 degrees (inv), draw the second 45 degrees if the radius
     signal filled               : std_ulogic := '1';                        -- is not 0, finish the ellipse if the remaining radius <= 1, end the busy and await next command
@@ -70,12 +70,12 @@ architecture rtl of ellipse_generator is
     signal p,                                                                  -- arc error offset / sigma
            px,                                                                 -- arc error offset / sigma
            py                   : signed(BITS_RAD * 3 + 1 downto 0) := (others => '0'); -- arc error offset/sigma
-    signal rx2,                                                         -- holds x radius ** 2
-           ry2                  : signed(BITS_RAD * 2 - 1 downto 0) := (others => '0'); -- holds y radius ** 2
+    signal rx2,                                                                 -- holds x radius ** 2
+           ry2                  : unsigned(BITS_RAD * 2 - 1 downto 0) := (others => '0');   -- holds y radius ** 2
     
-    signal alu_mult_a           : signed(BITS_RAD * 1 - 1 downto 0) := (others => '0');     -- consolidated single multiplier A-input for all multiplication in the generator
-    signal alu_mult_b           : signed(BITS_RAD * 2 - 1 downto 0) := (others => '0');     -- consolidated single multiplier B-input for all multiplication in the generator
-    signal alu_mult_y           : signed(BITS_RAD * 3 - 1 downto 0) := (others => '0');     -- consolidated single multiplier Y-output for all multiplication in the generator
+    signal alu_mult_a           : unsigned(BITS_RAD * 1 - 1 downto 0) := (others => '0');     -- consolidated single multiplier A-input for all multiplication in the generator
+    signal alu_mult_b           : unsigned(BITS_RAD * 2 - 1 downto 0) := (others => '0');     -- consolidated single multiplier B-input for all multiplication in the generator
+    signal alu_mult_y           : unsigned(BITS_RAD * 3 - 1 downto 0) := (others => '0');     -- consolidated single multiplier Y-output for all multiplication in the generator
     
     signal pixel_data_rdy_int   : std_ulogic := '0';                    -- '1' when coordinate outputs are valid
     signal busy_int             : std_ulogic := '0';                        -- '1' when coordinate outputs are valid
@@ -246,8 +246,8 @@ begin
                     when 1 =>
                         -- sub_function 1
                         -- step 1, setup consolidated multiplier to compute rx ** 2
-                        alu_mult_a <= resize(xrr, alu_mult_a'length);
-                        alu_mult_b <= resize(xrr, alu_mult_b'length);
+                        alu_mult_a <= resize(unsigned(xrr), alu_mult_a'length);
+                        alu_mult_b <= resize(unsigned(xrr), alu_mult_b'length);
                         x <= (others => '0');
                         y <= yrr;
                         draw_flat <= '0';
@@ -256,8 +256,8 @@ begin
                         
                     when 2 =>
                         -- step 2, setup consolidated multiplier to compute ry ** 2;
-                        alu_mult_a <= resize(yrr, alu_mult_a'length);
-                        alu_mult_b <= resize(yrr, alu_mult_b'length);
+                        alu_mult_a <= resize(unsigned(yrr), alu_mult_a'length);
+                        alu_mult_b <= resize(unsigned(yrr), alu_mult_b'length);
                         sub_function <= sub_function + 1;
                         
                     when 3 =>
@@ -265,7 +265,7 @@ begin
                         rx2 <= resize(alu_mult_y, rx2'length);    -- the ALU has a 2 clock delay, 1 clock to send data in, 1 clock for the result to become valid
                         
                         -- prepare py = ry * rx2
-                        alu_mult_a <= resize(yrr, alu_mult_a'length);
+                        alu_mult_a <= resize(unsigned(yrr), alu_mult_a'length);
                         alu_mult_b <= resize(alu_mult_y, alu_mult_b'length);
                         
                         -- begin the initial preparation of 'p' -> p = (0.25 * rx ** 2) + 0.5
@@ -275,16 +275,16 @@ begin
                         sub_function <= sub_function + 1;       -- advance the sub_function to the next step
                     
                     when 4 =>
-                        px <= px + ry2;             -- make px = integer(0.25 * rx2 + 0.5)
+                        px <= px + signed(ry2);             -- make px = integer(0.25 * rx2 + 0.5)
                         
                         -- store computed ry ** 2
                         ry2 <= resize(alu_mult_y, ry2'length);
                         sub_function <= sub_function + 1;
                         
                     when 5 =>
-                        px <= px + ry2 - alu_mult_y;                                            -- make px = px + ry2 - (rx2 * ry)
+                        px <= px + signed(ry2) - signed(alu_mult_y);                                            -- make px = px + ry2 - (rx2 * ry)
                         -- step 5, store computed rx2 * y
-                        py <= resize(shift_left(alu_mult_y, 1), py'length);                     -- store py = (ry * rx2) * 2
+                        py <= resize(shift_left(signed(alu_mult_y), 1), py'length);                     -- store py = (ry * rx2) * 2
                         sub_function <= sub_function + 1;
                     
                     when 6 =>
@@ -304,20 +304,20 @@ begin
                                 -- drawing the line *** WARNING, was originally less than equal to  <=, but this rendered an extra pixel
                                 pixel_data_rdy_int <= '1';          -- pixel data ready
                                 x <= x + 1;
-                                px <= px + shift_left(ry2, 1);
+                                px <= px + shift_left(signed(ry2), 1);
                                 if inv and filled then
                                     freeze <= '1';
                                 end if;
                                 
                                 if p <= 0 then
-                                    p <= p + ry2 + (px + shift_left(ry2, 1));
+                                    p <= p + signed(ry2) + (px + shift_left(signed(ry2), 1));
                                 else
                                     if not inv and filled then
                                         freeze <= '1';
                                     end if;
                                     y <= y - 1;
-                                    py <= py - shift_left(rx2, 1);
-                                    p <= p + ry2 + (px + shift_left(ry2, 1)) - (py - shift_left(rx2, 1));
+                                    py <= py - shift_left(signed(rx2), 1);
+                                    p <= p + signed(ry2) + (px + shift_left(signed(ry2), 1)) - (py - shift_left(signed(rx2), 1));
                                 end if;
                             else
                                 -- end of line has been reached
