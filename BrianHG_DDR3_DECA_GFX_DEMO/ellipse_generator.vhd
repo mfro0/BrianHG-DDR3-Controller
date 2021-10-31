@@ -245,10 +245,9 @@ begin
                     
                     when 1 =>
                         -- sub_function 1
-                        -- step 1, setup consolidated multiplier to compute r ** 2
-                        alu_mult_a(BITS_RAD * 1 - 1 downto 0) <= xrr(BITS_RAD - 1 downto 0);
-                        alu_mult_b(BITS_RAD * 1 - 1 downto 0) <= xrr(BITS_RAD - 1 downto 0);
-                        alu_mult_b(BITS_RAD * 2 - 1 downto BITS_RAD * 1) <= (others => '0');
+                        -- step 1, setup consolidated multiplier to compute rx ** 2
+                        alu_mult_a <= resize(xrr, alu_mult_a'length);
+                        alu_mult_b <= resize(xrr, alu_mult_b'length);
                         x <= (others => '0');
                         y <= yrr;
                         draw_flat <= '0';
@@ -256,22 +255,22 @@ begin
                         sub_function <= sub_function + 1;
                         
                     when 2 =>
-                        -- step s, setup consolidated multiplier to compute ry ** 2;
-                        alu_mult_a(BITS_RAD * 1 - 1 downto 0) <= yrr(BITS_RAD - 1 downto 0);
-                        alu_mult_b(BITS_RAD * 1 - 1 downto 0) <= yrr(BITS_RAD - 1 downto 0);
-                        alu_mult_b(BITS_RAD * 2 - 1 downto BITS_RAD * 1) <= (others => '0');
+                        -- step 2, setup consolidated multiplier to compute ry ** 2;
+                        alu_mult_a <= resize(yrr, alu_mult_a'length);
+                        alu_mult_b <= resize(yrr, alu_mult_b'length);
                         sub_function <= sub_function + 1;
                         
                     when 3 =>
                         -- step 3, store computed rx ** 2
-                        rx2(BITS_RAD * 2 - 1 downto 0) <= alu_mult_y(BITS_RAD * 2 - 1 downto 0);    -- the ALU has a 2 clock delay, 1 clock to send data in, 1 clock for the result to become valid
+                        rx2 <= resize(alu_mult_y, rx2'length);    -- the ALU has a 2 clock delay, 1 clock to send data in, 1 clock for the result to become valid
                         
                         -- prepare py = ry * rx2
-                        alu_mult_a(BITS_RAD * 1 - 1 downto 0) <= yrr(BITS_RAD - 1 downto 0);
-                        alu_mult_b(BITS_RAD * 2 - 1 downto 0) <= alu_mult_y(BITS_RAD * 2 - 1 downto 0);
+                        alu_mult_a <= resize(yrr, alu_mult_a'length);
+                        alu_mult_b <= resize(alu_mult_y, alu_mult_b'length);
                         
                         -- begin the initial preparation of 'p' -> p = (0.25 * rx ** 2) + 0.5
-                        ry2 <= resize(shift_right(alu_mult_y(BITS_RAD * 2 - 1 downto 0) + 2, 2), BITS_RAD * 2);                     -- computes 2x2 / 4 with rounding, use px as the temporary register
+                        -- VHDL beware: need to do an unsigned (logical) shift_right as system verilog does exactly that
+                        ry2 <= resize(shift_right(alu_mult_y + 2, 2), ry2'length);                       -- computes rx2 / 4 with rounding, use px as the temporary register
                         px <= (others => '0');                                                                                      -- clear temp px register
                         sub_function <= sub_function + 1;       -- advance the sub_function to the next step
                     
@@ -279,13 +278,13 @@ begin
                         px <= px + ry2;             -- make px = integer(0.25 * rx2 + 0.5)
                         
                         -- store computed ry ** 2
-                        ry2(BITS_RAD * 2 - 1 downto 0) <= alu_mult_y(BITS_RAD * 2 - 1 downto 0);
+                        ry2 <= resize(alu_mult_y, ry2'length);
                         sub_function <= sub_function + 1;
                         
                     when 5 =>
-                        px <= px + ry2 - alu_mult_y(BITS_RAD * 3 - 1 downto 0);                 -- make px = px + ry2 - (rx2 * ry)
+                        px <= px + ry2 - alu_mult_y;                                            -- make px = px + ry2 - (rx2 * ry)
                         -- step 5, store computed rx2 * y
-                        py <= shift_left(resize(alu_mult_y((BITS_RAD - 1) * 3 - 1 downto 0), py'length), 1);       -- store py = (ry * rx2) * 2
+                        py <= resize(shift_left(alu_mult_y, 1), py'length);                     -- store py = (ry * rx2) * 2
                         sub_function <= sub_function + 1;
                     
                     when 6 =>
