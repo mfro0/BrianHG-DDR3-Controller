@@ -28,7 +28,7 @@ timing_analyzer:
 	$(ALTPATH)/quartus_sta $(ALTOPT) $(PROJ)
 
 eda:
-	$(ALTPATH)/quartus_eda --read_settings_files=off --write_settings_files=off $(ALTOPT) $(PROJ) -c $(PROJ)
+	$(ALTPATH)/quartus_eda --read_settings_files=off --write_settings_files=off --simulation $(ALTOPT) $(PROJ) -c $(PROJ)
 
 # program the beast
 p: $(BITSTREAM)
