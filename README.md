@@ -93,6 +93,8 @@ Nov 1, 20201
 
 Demo preview v1.5 DECA eval board .sof programming file:
 ---------------------------------
+ V1.5 demo preview:
+---------------------------------
 
 - Multiport interface can now officially reach 200 MHz in half rate mode and potentially be overclocked to 250MHz.
 See my Arrow DECA BrianHG_DDR3_Controller V1.5 overclocked to 500MHz in Half-rate mode.
