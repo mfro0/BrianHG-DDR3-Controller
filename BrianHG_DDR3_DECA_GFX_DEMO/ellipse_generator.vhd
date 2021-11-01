@@ -26,7 +26,8 @@
     generic
     (
         BITS_RES        : natural := 12;            -- Coordinates IO port bits. 12 = -2048 to + 2047
-        BITS_RAD        : natural := 11;            -- should be (BITS_RES - 1) - Bits for internal maximum radius. Since the radius is positive only, 1 bit less is sufficient
+        BITS_RAD        : natural := 11;            -- should be (BITS_RES - 1) - Bits for internal maximum radius.
+                                                    -- Since the radius is positive only, 1 bit less is sufficient
         USE_ALTERA_IP   : natural := 1              -- Selects if Altera's LPM_MULT should be used
     );
     port
@@ -108,7 +109,7 @@ begin
                 std_logic_vector(result)              => alu_mult_y,
                 aclr                => '0',
             --  sclr                => '0',             -- omit for older versions of Modelsim
-                sum                 => "0"
+                sum                 => (others => '0')
             );
     else generate
         -- USE_ALTERA_IP is disabled, use this multiply code for the consolidated multiply instead
