@@ -93,7 +93,8 @@ Nov 1, 20201
 
 Demo preview v1.5 DECA eval board .sof programming file:
 ---------------------------------
- V1.5 demo preview:
+Nov 1, 20201
+ V1.5 .sof DECA demo preview: (The full v1.5 project files comming in 2 days)
 ---------------------------------
 
 - Multiport interface can now officially reach 200 MHz in half rate mode and potentially be overclocked to 250MHz.
