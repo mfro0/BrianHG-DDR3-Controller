@@ -94,6 +94,7 @@ Nov 1, 20201
 Demo preview v1.5 DECA eval board .sof programming file:
 ---------------------------------
 Nov 1, 20201
+
  V1.5 .sof DECA demo preview: (The full v1.5 project files comming in 2 days)
 ---------------------------------
 
