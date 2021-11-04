@@ -181,16 +181,16 @@ begin
                     else
                         case quadrant_latch is
                             when 0 =>
-                                x_coord <= resize(xcr + x, x_coord'length);
-                                y_coord <= resize(ycr + y, y_coord'length);
+                                y_coord <= resize(xcr + x, x_coord'length);
+                                x_coord <= resize(ycr + y, y_coord'length);
                             when 1 =>
-                                x_coord <= resize(xcr + x, x_coord'length);
-                                y_coord <= resize(ycr - y, y_coord'length);
+                                y_coord <= resize(xcr + x, x_coord'length);
+                                x_coord <= resize(ycr - y, y_coord'length);
                             when 2 =>
-                                x_coord <= resize(xcr - x, x_coord'length);
-                                y_coord <= resize(ycr + y, y_coord'length);
+                                y_coord <= resize(xcr - x, x_coord'length);
+                                x_coord <= resize(ycr + y, y_coord'length);
                             when 3 =>
-                                x_coord <= resize(xcr - x, x_coord'length);
+                                y_coord <= resize(xcr - x, x_coord'length);
                                 y_coord <= resize(ycr - y, y_coord'length);
                         end case;
                     end if;

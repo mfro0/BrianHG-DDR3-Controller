@@ -29,11 +29,18 @@ architecture sim of eg_tb is
            pixel_y              : signed(BITS_RES downto 0);
     signal pixel_rdy,
            ellipse_complete     : std_ulogic;
+    signal ix, iy               : integer;
 
-    type state_t is (S0, S1, S2, S3, S4, S5);
+    type state_t is (S0, S1, S2, S3, S4, S5, S6);
 
     signal state                : state_t := S1;
     signal rand                 : integer;
+
+    procedure plot(x : integer; y : integer; col : integer) is
+    begin
+        report "plot: x=" & integer'image(x) & " y=" & integer'image(y);
+    end procedure plot;
+    attribute foreign of plot : procedure is "VHPIDIRECT ./libellipse.so plot";
 
 begin
     clk <= not clk after 8 ns;
@@ -50,23 +57,43 @@ begin
 
             case state is
                 when S1 =>
-                    xc <= to_signed(integer(floor(x * 400.0)), xc'length);
-                    state <= state_t'succ(state);
-                when S2 =>
-                    yc <= to_signed(integer(floor(x * 400.0)), yc'length);
-                    state <= state_t'succ(state);
-                when S3 =>
-                    xr <= to_signed(integer(floor(x * 400.0)), xr'length);
-                    state <= state_t'succ(state);
-                when S4 =>
-                    yr <= to_signed(integer(floor(x * 400.0)), yr'length);
-                    state <= state_t'succ(state);
-                when S5 =>
+                    -- xc <= to_signed(integer(floor(x * 600.0)), xc'length);
+                    xc <= 12d"200";
+                    -- yc <= to_signed(integer(floor(x * 400.0)), yc'length);
+                    yc <= 12d"200";
+                    -- xr <= to_signed(integer(floor(x * 200.0)), xr'length);
+                    xr <= 12d"40";
+                    -- yr <= to_signed(integer(floor(x * 200.0)), yr'length);
+                    yr <= 12d"20";
+                    ellipse_quadrant <= "00";
                     ellipse_enable <= '1';
                     ellipse_run <= '1';
                     ellipse_filled <= '1';
                     ena_pause <= '0';
-                    if ellipse_complete then state <= S0; end if;
+
+                    state <= state_t'succ(state);
+                    
+                when S2 =>
+                    state <= state_t'succ(state);
+
+                when S3 =>
+                    state <= state_t'succ(state);
+
+                when S4 =>
+                    if pixel_rdy then 
+                        ix <= to_integer(pixel_x);
+                        iy <= to_integer(pixel_y);
+                    end if;
+
+                    state <= state_t'succ(state);
+
+                when S5 =>
+                    if ellipse_complete then
+                        state <= state_t'succ(state);
+                    elsif pixel_rdy = '1' then
+                        plot(ix, iy, 1);
+                        state <= S4;
+                    end if;
                 when others =>
                     std.env.stop(0);
             end case;

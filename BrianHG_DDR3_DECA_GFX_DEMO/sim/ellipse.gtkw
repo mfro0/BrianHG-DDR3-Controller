@@ -1,54 +1,33 @@
 [*]
 [*] GTKWave Analyzer v3.3.104 (w)1999-2020 BSI
-[*] Thu Nov  4 09:33:00 2021
+[*] Thu Nov  4 12:57:34 2021
 [*]
 [dumpfile] "/home/mfro/Dokumente/Development/vhdl/BrianHG-DDR3-Controller/BrianHG_DDR3_DECA_GFX_DEMO/sim/ellipse.ghw"
-[dumpfile_mtime] "Thu Nov  4 09:31:21 2021"
-[dumpfile_size] 5474233
+[dumpfile_mtime] "Thu Nov  4 12:56:04 2021"
+[dumpfile_size] 6103
 [savefile] "/home/mfro/Dokumente/Development/vhdl/BrianHG-DDR3-Controller/BrianHG_DDR3_DECA_GFX_DEMO/sim/ellipse.gtkw"
 [timestart] 0
-[size] 1000 600
+[size] 1483 661
 [pos] -1 -1
-*-24.408243 12000000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+*-24.408243 48000000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] top.
 [treeopen] top.eg_tb.
+[treeopen] top.eg_tb.i_ellipse_generator.
 [sst_width] 228
-[signals_width] 174
+[signals_width] 228
 [sst_expanded] 1
-[sst_vpaned_height] 141
+[sst_vpaned_height] 158
 @28
 top.eg_tb.i_ellipse_generator.clk
-@22
-#{top.eg_tb.pixel_y[12:0]} top.eg_tb.pixel_y[12] top.eg_tb.pixel_y[11] top.eg_tb.pixel_y[10] top.eg_tb.pixel_y[9] top.eg_tb.pixel_y[8] top.eg_tb.pixel_y[7] top.eg_tb.pixel_y[6] top.eg_tb.pixel_y[5] top.eg_tb.pixel_y[4] top.eg_tb.pixel_y[3] top.eg_tb.pixel_y[2] top.eg_tb.pixel_y[1] top.eg_tb.pixel_y[0]
-#{top.eg_tb.pixel_x[12:0]} top.eg_tb.pixel_x[12] top.eg_tb.pixel_x[11] top.eg_tb.pixel_x[10] top.eg_tb.pixel_x[9] top.eg_tb.pixel_x[8] top.eg_tb.pixel_x[7] top.eg_tb.pixel_x[6] top.eg_tb.pixel_x[5] top.eg_tb.pixel_x[4] top.eg_tb.pixel_x[3] top.eg_tb.pixel_x[2] top.eg_tb.pixel_x[1] top.eg_tb.pixel_x[0]
-#{top.eg_tb.xr[11:0]} top.eg_tb.xr[11] top.eg_tb.xr[10] top.eg_tb.xr[9] top.eg_tb.xr[8] top.eg_tb.xr[7] top.eg_tb.xr[6] top.eg_tb.xr[5] top.eg_tb.xr[4] top.eg_tb.xr[3] top.eg_tb.xr[2] top.eg_tb.xr[1] top.eg_tb.xr[0]
-#{top.eg_tb.yr[11:0]} top.eg_tb.yr[11] top.eg_tb.yr[10] top.eg_tb.yr[9] top.eg_tb.yr[8] top.eg_tb.yr[7] top.eg_tb.yr[6] top.eg_tb.yr[5] top.eg_tb.yr[4] top.eg_tb.yr[3] top.eg_tb.yr[2] top.eg_tb.yr[1] top.eg_tb.yr[0]
-#{top.eg_tb.xc[11:0]} top.eg_tb.xc[11] top.eg_tb.xc[10] top.eg_tb.xc[9] top.eg_tb.xc[8] top.eg_tb.xc[7] top.eg_tb.xc[6] top.eg_tb.xc[5] top.eg_tb.xc[4] top.eg_tb.xc[3] top.eg_tb.xc[2] top.eg_tb.xc[1] top.eg_tb.xc[0]
-@23
-#{top.eg_tb.yc[11:0]} top.eg_tb.yc[11] top.eg_tb.yc[10] top.eg_tb.yc[9] top.eg_tb.yc[8] top.eg_tb.yc[7] top.eg_tb.yc[6] top.eg_tb.yc[5] top.eg_tb.yc[4] top.eg_tb.yc[3] top.eg_tb.yc[2] top.eg_tb.yc[1] top.eg_tb.yc[0]
-@28
-top.eg_tb.i_ellipse_generator.freeze
-top.eg_tb.i_ellipse_generator.ena_process
-top.eg_tb.i_ellipse_generator.busy_int
-top.eg_tb.i_ellipse_generator.pixel_data_rdy_int
-top.eg_tb.i_ellipse_generator.filled
-top.eg_tb.i_ellipse_generator.draw_flat
-top.eg_tb.i_ellipse_generator.inv
-@420
-top.eg_tb.i_ellipse_generator.sub_function
-top.eg_tb.i_ellipse_generator.quadrant_latch
-@28
-top.eg_tb.i_ellipse_generator.draw_line
-top.eg_tb.i_ellipse_generator.draw_line
-top.eg_tb.i_ellipse_generator.ellipse_complete
-top.eg_tb.i_ellipse_generator.pixel_data_rdy
-top.eg_tb.i_ellipse_generator.busy
-top.eg_tb.i_ellipse_generator.ena_pause
-top.eg_tb.i_ellipse_generator.ellipse_filled
-top.eg_tb.i_ellipse_generator.run
-top.eg_tb.i_ellipse_generator.enable
 top.eg_tb.i_ellipse_generator.reset
+top.eg_tb.i_ellipse_generator.enable
+top.eg_tb.i_ellipse_generator.run
+#{top.eg_tb.i_ellipse_generator.quadrant[1:0]} top.eg_tb.i_ellipse_generator.quadrant[1] top.eg_tb.i_ellipse_generator.quadrant[0]
+top.eg_tb.i_ellipse_generator.ellipse_complete
 @420
-top.eg_tb.state
+#{top.eg_tb.pixel_x[12:0]} top.eg_tb.pixel_x[12] top.eg_tb.pixel_x[11] top.eg_tb.pixel_x[10] top.eg_tb.pixel_x[9] top.eg_tb.pixel_x[8] top.eg_tb.pixel_x[7] top.eg_tb.pixel_x[6] top.eg_tb.pixel_x[5] top.eg_tb.pixel_x[4] top.eg_tb.pixel_x[3] top.eg_tb.pixel_x[2] top.eg_tb.pixel_x[1] top.eg_tb.pixel_x[0]
+#{top.eg_tb.pixel_y[12:0]} top.eg_tb.pixel_y[12] top.eg_tb.pixel_y[11] top.eg_tb.pixel_y[10] top.eg_tb.pixel_y[9] top.eg_tb.pixel_y[8] top.eg_tb.pixel_y[7] top.eg_tb.pixel_y[6] top.eg_tb.pixel_y[5] top.eg_tb.pixel_y[4] top.eg_tb.pixel_y[3] top.eg_tb.pixel_y[2] top.eg_tb.pixel_y[1] top.eg_tb.pixel_y[0]
+@29
+top.eg_tb.i_ellipse_generator.pixel_data_rdy
 [pattern_trace] 1
 [pattern_trace] 0
