@@ -44,6 +44,8 @@ architecture sim of eg_tb is
 
 begin
     clk <= not clk after 8 ns;
+    ix <= to_integer(pixel_x) when pixel_rdy;
+    iy <= to_integer(pixel_y) when pixel_rdy;
 
     p_eg: process(all)
         variable sd1, sd2       : positive;
@@ -57,14 +59,14 @@ begin
 
             case state is
                 when S1 =>
-                    -- xc <= to_signed(integer(floor(x * 600.0)), xc'length);
-                    xc <= 12d"200";
-                    -- yc <= to_signed(integer(floor(x * 400.0)), yc'length);
-                    yc <= 12d"200";
-                    -- xr <= to_signed(integer(floor(x * 200.0)), xr'length);
-                    xr <= 12d"40";
-                    -- yr <= to_signed(integer(floor(x * 200.0)), yr'length);
-                    yr <= 12d"20";
+                    xc <= to_signed(integer(floor(x * 600.0)), xc'length);
+                    --xc <= 12d"200";
+                    yc <= to_signed(integer(floor(x * 400.0)), yc'length);
+                    -- yc <= 12d"200";
+                    xr <= to_signed(integer(floor(x * 200.0)), xr'length);
+                    -- xr <= 12d"40";
+                    yr <= to_signed(integer(floor(x * 200.0)), yr'length);
+                    -- yr <= 12d"20";
                     ellipse_quadrant <= "00";
                     ellipse_enable <= '1';
                     ellipse_run <= '1';
@@ -80,17 +82,13 @@ begin
                     state <= state_t'succ(state);
 
                 when S4 =>
-                    if pixel_rdy then 
-                        ix <= to_integer(pixel_x);
-                        iy <= to_integer(pixel_y);
-                    end if;
-
                     state <= state_t'succ(state);
 
                 when S5 =>
                     if ellipse_complete then
                         state <= state_t'succ(state);
-                    elsif pixel_rdy = '1' then
+                    end if;
+                    if pixel_rdy = '1' then
                         plot(ix, iy, 1);
                         state <= S4;
                     end if;
