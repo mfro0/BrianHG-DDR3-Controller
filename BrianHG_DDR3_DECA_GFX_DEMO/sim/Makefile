@@ -14,7 +14,7 @@ all:    ellipse
 ellipse: $(ELLIPSE_MODULES) eg_tb
 
 run_ellipse: $(ELLIPSE_MODULES)
-	$(GHDL) -r $(GHDLFLAGS) eg_tb --disp-tree $(GHDL_RUNFLAGS) --wave=ellipse.ghw
+	./eg_tb --disp-tree $(GHDL_RUNFLAGS) --wave=ellipse.ghw
 
 %: %.o
 	$(GHDL) -e $(GHDLFLAGS) $@

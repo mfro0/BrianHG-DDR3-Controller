@@ -4,13 +4,14 @@ end entity eg_tb;
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+use ieee.math_real.all;
 
 architecture sim of eg_tb is
-    constant BIT_RES            : natural := 12;
-    constant BIT_RAD            : natural := BIT_RES - 1;
+    constant BITS_RES           : natural := 12;
+    constant BITS_RAD           : natural := BITS_RES - 1;
     constant USE_ALTERA_IP      : natural := 1;
     
-    signal clk                  : std_ulogic := '0';
+    signal clk                  : std_ulogic := '1';
     signal reset,
            ellipse_enable,
            ellipse_run          : std_ulogic;
@@ -20,24 +21,64 @@ architecture sim of eg_tb is
     signal xc,
            yc,
            xr,
-           yr                   : signed(BIT_RES - 1 downto 0);
+           yr                   : signed(BITS_RES - 1 downto 0);
     signal ena_pause,
            ellipse_busy         : std_ulogic;
 
     signal pixel_x,
-           pixel_y              : signed(BIT_RES downto 0);
+           pixel_y              : signed(BITS_RES downto 0);
     signal pixel_rdy,
            ellipse_complete     : std_ulogic;
 
+    type state_t is (S0, S1, S2, S3, S4, S5);
+
+    signal state                : state_t := S1;
+    signal rand                 : integer;
+
 begin
-    clk <= not clk after 20 ns;
+    clk <= not clk after 8 ns;
+
+    p_eg: process(all)
+        variable sd1, sd2       : positive;
+        variable x              : real;
+    begin
+        if reset then
+            state <= S0;
+        elsif rising_edge(clk) then
+            -- generate random number
+            uniform(sd1, sd2, x);
+
+            case state is
+                when S1 =>
+                    xc <= to_signed(integer(floor(x * 400.0)), xc'length);
+                    state <= state_t'succ(state);
+                when S2 =>
+                    yc <= to_signed(integer(floor(x * 400.0)), yc'length);
+                    state <= state_t'succ(state);
+                when S3 =>
+                    xr <= to_signed(integer(floor(x * 400.0)), xr'length);
+                    state <= state_t'succ(state);
+                when S4 =>
+                    yr <= to_signed(integer(floor(x * 400.0)), yr'length);
+                    state <= state_t'succ(state);
+                when S5 =>
+                    ellipse_enable <= '1';
+                    ellipse_run <= '1';
+                    ellipse_filled <= '1';
+                    ena_pause <= '0';
+                    if ellipse_complete then state <= S0; end if;
+                when others =>
+                    std.env.stop(0);
+            end case;
+        end if;
+    end process p_eg;
 
     i_ellipse_generator : entity work.ellipse_generator
         generic map
         (
-            BITS_RES        => 12,            -- Coordinates IO port bits. 12 = -2048 to + 2047
-            BITS_RAD        => 11,            -- should be (BITS_RES - 1) - Bits for internal ma
-            USE_ALTERA_IP   => 1              -- Selects if Altera's LPM_MULT should be used
+            BITS_RES        => BITS_RES,            -- Coordinates IO port bits. 12 = -2048 to + 2047
+            BITS_RAD        => BITS_RAD,            -- should be (BITS_RES - 1) - Bits for internal ma
+            USE_ALTERA_IP   => USE_ALTERA_IP        -- Selects if Altera's LPM_MULT should be used
         )
         port map
         (
