@@ -191,7 +191,7 @@ begin
                                 x_coord <= resize(ycr + y, y_coord'length);
                             when 3 =>
                                 y_coord <= resize(xcr - x, x_coord'length);
-                                y_coord <= resize(ycr - y, y_coord'length);
+                                x_coord <= resize(ycr - y, y_coord'length);
                         end case;
                     end if;
                 else        -- not freeze => do a horizontal fill
