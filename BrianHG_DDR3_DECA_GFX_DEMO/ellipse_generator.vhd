@@ -106,7 +106,7 @@ begin
                 datab               => std_logic_vector(alu_mult_b),
                 clken               => ena_process,
                 clock               => clk,
-                std_logic_vector(result)              => alu_mult_y,
+                signed(result)              => alu_mult_y,
                 aclr                => '0',
             --  sclr                => '0',             -- omit for older versions of Modelsim
                 sum                 => (others => '0')
@@ -249,7 +249,8 @@ begin
                         -- step 1, setup consolidated multiplier to compute rx ** 2
                         alu_mult_a <= resize(xrr, alu_mult_a'length);
                         alu_mult_b <= resize(xrr, alu_mult_b'length);
-                        x <= (others => '0');
+
+                        x <= (others => '0');                        
                         y <= yrr;
                         draw_flat <= '0';
                         p <= (others => '0');
@@ -270,7 +271,6 @@ begin
                         alu_mult_b <= resize(alu_mult_y, alu_mult_b'length);
                         
                         -- begin the initial preparation of 'p' -> p = (0.25 * rx ** 2) + 0.5
-                        -- VHDL beware: need to do an unsigned (logical) shift_right as system verilog does exactly that
                         ry2 <= resize(shift_right(alu_mult_y + 2, 2), ry2'length);                       -- computes rx2 / 4 with rounding, use px as the temporary register
                         px <= (others => '0');                                                                                      -- clear temp px register
                         sub_function <= sub_function + 1;       -- advance the sub_function to the next step
