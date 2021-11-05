@@ -14,7 +14,11 @@ all:    ellipse
 ellipse: $(ELLIPSE_MODULES) eg_tb
 
 run_ellipse: $(ELLIPSE_MODULES)
-	./eg_tb --disp-tree $(GHDL_RUNFLAGS) --wave=ellipse.ghw
+	./eg_tb $(GHDL_RUNFLAGS) --wave=ellipse.ghw
+
+shared: $(ELLIPSE_MODULES)
+	$(GHDL) -e -shared  $(GHDLFLAGS) -o libeg_tb.so eg_tb
+
 
 %: %.o
 	$(GHDL) -e $(GHDLFLAGS) $@

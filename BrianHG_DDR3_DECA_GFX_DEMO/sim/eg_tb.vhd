@@ -29,68 +29,98 @@ architecture sim of eg_tb is
            pixel_y              : signed(BITS_RES downto 0);
     signal pixel_rdy,
            ellipse_complete     : std_ulogic;
-    signal ix, iy               : integer;
+    signal ix, iy, icol         : integer;
+    signal i_quadrant           : integer range 0 to 3;
 
     type state_t is (S0, S1, S2, S3, S4, S5, S6);
 
     signal state                : state_t := S1;
-    signal rand                 : integer;
+    signal rnd                  : integer;
 
+    procedure init is
+    begin
+        report "init";
+    end procedure init;
+    --attribute foreign of init : procedure is "VHPIDIRECT ./libellipse.so init";
+    
     procedure plot(x : integer; y : integer; col : integer) is
     begin
         report "plot: x=" & integer'image(x) & " y=" & integer'image(y);
     end procedure plot;
-    attribute foreign of plot : procedure is "VHPIDIRECT ./libellipse.so plot";
+    attribute foreign of plot : procedure is "VHPIDIRECT plot";
+
 
 begin
     clk <= not clk after 8 ns;
-    ix <= to_integer(pixel_x) when pixel_rdy;
-    iy <= to_integer(pixel_y) when pixel_rdy;
+
+    ellipse_quadrant <= std_ulogic_vector(to_unsigned(i_quadrant, ellipse_quadrant'length));
+
+    p_once : process
+    begin
+        init;
+        wait;
+    end process p_once;
+
+    ix <= to_integer(pixel_x);
+    iy <= to_integer(pixel_y);
+    p_pixel_out : process(all)
+    begin
+        if pixel_rdy = '1' then
+            plot(ix, iy, icol);
+        end if;
+    end process p_pixel_out;
 
     p_eg: process(all)
+        variable rand           : real;
         variable sd1, sd2       : positive;
-        variable x              : real;
+        impure function rand_int(min_val, max_val : integer) return integer is
+            variable r : real;
+        begin
+            uniform(sd1, sd2, r);
+            return integer(
+                round(r * real(max_val - min_val + 1) + real(min_val) - 0.5));
+        end function;
     begin
         if reset then
             state <= S0;
         elsif rising_edge(clk) then
             -- generate random number
-            uniform(sd1, sd2, x);
 
             case state is
                 when S1 =>
-                    xc <= to_signed(integer(floor(x * 600.0)), xc'length);
-                    --xc <= 12d"200";
-                    yc <= to_signed(integer(floor(x * 400.0)), yc'length);
-                    -- yc <= 12d"200";
-                    xr <= to_signed(integer(floor(x * 200.0)), xr'length);
-                    -- xr <= 12d"40";
-                    yr <= to_signed(integer(floor(x * 200.0)), yr'length);
-                    -- yr <= 12d"20";
-                    ellipse_quadrant <= "00";
+                    xc <= to_signed(rand_int(0, 799), xc'length);
+                    yc <= to_signed(rand_int(0, 600), yc'length);
+                    xr <= to_signed(rand_int(0, 100), xr'length);
+                    yr <= to_signed(rand_int(0, 100), yr'length);
+                    i_quadrant <= 0;
+
+                    state <= state_t'succ(state);
+
+                when S2 =>
+
+                    icol <= integer(rand_int(0, 2 ** 24 - 1));
+                    state <= state_t'succ(state);
+                    
+                when S3 =>
                     ellipse_enable <= '1';
                     ellipse_run <= '1';
                     ellipse_filled <= '1';
                     ena_pause <= '0';
-
-                    state <= state_t'succ(state);
-                    
-                when S2 =>
-                    state <= state_t'succ(state);
-
-                when S3 =>
                     state <= state_t'succ(state);
 
                 when S4 =>
+
                     state <= state_t'succ(state);
 
                 when S5 =>
-                    if ellipse_complete then
-                        state <= state_t'succ(state);
-                    end if;
                     if pixel_rdy = '1' then
-                        plot(ix, iy, 1);
                         state <= S4;
+                    end if;
+                    if ellipse_complete = '1' and i_quadrant = 3 then
+                        state <= S1;
+                    elsif ellipse_complete = '1' and i_quadrant /= 3 then
+                        i_quadrant <= i_quadrant + 1;
+                        state <= S3;
                     end if;
                 when others =>
                     std.env.stop(0);
