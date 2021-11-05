@@ -8,6 +8,7 @@
 #include <QPixmap>
 #include <QPaintEvent>
 #include <QColor>
+#include <QDebug>
 
 
 
@@ -36,6 +37,7 @@ WorkerThread *workerThread;
 void cppPlot(int x, int y, int col)
 {
     emit workerThread->resultReady(x, y, col);
+    qDebug().nospace() << "x=" << x << " y=" << y << " col=" << Qt::hex << col;
 }
 
 extern "C" void plot(int x, int y, int col)
