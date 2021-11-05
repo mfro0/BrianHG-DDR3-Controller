@@ -14,35 +14,29 @@ architecture sim of eg_tb is
     signal clk                  : std_ulogic := '1';
     signal reset,
            ellipse_enable,
-           ellipse_run          : std_ulogic;
+           ellipse_run          : std_ulogic := '0';
     signal ellipse_quadrant     : std_ulogic_vector(1 downto 0);
-    signal ellipse_filled       : std_ulogic;
+    signal ellipse_filled       : std_ulogic := '0';
 
     signal xc,
            yc,
            xr,
-           yr                   : signed(BITS_RES - 1 downto 0);
+           yr                   : signed(BITS_RES - 1 downto 0) := (others => '0');
     signal ena_pause,
-           ellipse_busy         : std_ulogic;
+           ellipse_busy         : std_ulogic := '0';
 
     signal pixel_x,
-           pixel_y              : signed(BITS_RES downto 0);
+           pixel_y              : signed(BITS_RES downto 0) := (others => '0');
     signal pixel_rdy,
-           ellipse_complete     : std_ulogic;
-    signal ix, iy, icol         : integer;
-    signal i_quadrant           : integer range 0 to 3;
+           ellipse_complete     : std_ulogic := '0';
+    signal ix, iy, icol         : integer := 0;
+    signal i_quadrant           : integer range 0 to 3 := 0;
 
     type state_t is (S0, S1, S2, S3, S4, S5, S6);
 
     signal state                : state_t := S1;
     signal rnd                  : integer;
 
-    procedure init is
-    begin
-        report "init";
-    end procedure init;
-    --attribute foreign of init : procedure is "VHPIDIRECT ./libellipse.so init";
-    
     procedure plot(x : integer; y : integer; col : integer) is
     begin
         report "plot: x=" & integer'image(x) & " y=" & integer'image(y);
@@ -55,14 +49,9 @@ begin
 
     ellipse_quadrant <= std_ulogic_vector(to_unsigned(i_quadrant, ellipse_quadrant'length));
 
-    p_once : process
-    begin
-        init;
-        wait;
-    end process p_once;
-
     ix <= to_integer(pixel_x);
     iy <= to_integer(pixel_y);
+
     p_pixel_out : process(all)
     begin
         if pixel_rdy = '1' then
@@ -71,8 +60,9 @@ begin
     end process p_pixel_out;
 
     p_eg: process(all)
-        variable rand           : real;
-        variable sd1, sd2       : positive;
+        variable rand           : real := 0.0;
+        variable sd1, sd2       : positive := 1;
+
         impure function rand_int(min_val, max_val : integer) return integer is
             variable r : real;
         begin
@@ -84,14 +74,13 @@ begin
         if reset then
             state <= S0;
         elsif rising_edge(clk) then
-            -- generate random number
 
             case state is
                 when S1 =>
                     xc <= to_signed(rand_int(0, 799), xc'length);
                     yc <= to_signed(rand_int(0, 600), yc'length);
-                    xr <= to_signed(rand_int(0, 100), xr'length);
-                    yr <= to_signed(rand_int(0, 100), yr'length);
+                    xr <= to_signed(rand_int(0, 400), xr'length);
+                    yr <= to_signed(rand_int(0, 400), yr'length);
                     i_quadrant <= 0;
 
                     state <= state_t'succ(state);
