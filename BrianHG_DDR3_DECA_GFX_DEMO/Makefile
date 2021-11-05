@@ -6,9 +6,9 @@ else
 	ALTPATH=/opt/intelFPGA_lite/20.1/quartus/bin
 	ALTOPT=--64bit
 endif
-BITSTREAM=output_files/$(PROJ).sof
 
 PROJ=BrianHG_DDR3_DECA_top.qpf
+BITSTREAM=output_files/$(patsubst %.qpf,%,$(PROJ)).sof
 
 all: precmd synthesis fitter assembler timing_analyzer eda
 
