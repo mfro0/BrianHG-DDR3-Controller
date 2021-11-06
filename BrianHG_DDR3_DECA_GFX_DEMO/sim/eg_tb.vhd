@@ -72,8 +72,8 @@ begin
         elsif rising_edge(clk) then
             case state is
                 when S1 =>
-                    xc <= to_signed(rand_int(0, 799), xc'length);
-                    yc <= to_signed(rand_int(0, 599), yc'length);
+                    xc <= to_signed(rand_int(0, 1279), xc'length);
+                    yc <= to_signed(rand_int(0, 1023), yc'length);
                     xr <= to_signed(rand_int(0, 400), xr'length);
                     yr <= to_signed(rand_int(0, 400), yr'length);
                     ellipse_enable <= '0';
