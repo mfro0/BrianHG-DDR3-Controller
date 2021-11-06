@@ -67,12 +67,12 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     int argc = 1;
-    char *argv[] = {"argument1", "argument2"};
+    const char * argv[] = {"argument1", "argument2"};
     ui->setupUi(this);
     pixmap = QPixmap(this->width(), this->height());
     pixmap.fill(QColor(QColorConstants::White));
     std::cout << "start thread" << std::endl;
-    startWorkInAThread(argc, argv);
+    startWorkInAThread(argc, const_cast<char **>(argv));
 }
 
 MainWindow::~MainWindow()
