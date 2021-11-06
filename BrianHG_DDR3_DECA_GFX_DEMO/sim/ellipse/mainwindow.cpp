@@ -37,7 +37,7 @@ WorkerThread *workerThread;
 void cppPlot(int x, int y, int col)
 {
     emit workerThread->resultReady(x, y, col);
-    qDebug().nospace() << "x=" << x << " y=" << y << " col=" << Qt::hex << col;
+    //qDebug().nospace() << "x=" << x << " y=" << y << " col=" << Qt::hex << col;
 }
 
 extern "C" void plot(int x, int y, int col)
@@ -48,7 +48,6 @@ extern "C" void plot(int x, int y, int col)
 void MainWindow::handleResults(int x, int y, int col)
 {
     QPainter p(&pixmap);
-    QColor c(col);
     p.setPen(QColor(col >> 16, col >> 8 & 0xff, col & 0xff));
     p.drawPoint(QPoint(x, y));
     repaint(QRect(x, y, 1, 1));

@@ -30,9 +30,9 @@ architecture sim of eg_tb is
     signal pixel_rdy,
            ellipse_complete     : std_ulogic := '0';
     signal ix, iy, icol         : integer := 0;
-    signal i_quadrant           : integer range 0 to 3 := 0;
+    signal i_quadrant           : integer range 0 to 4 := 0;
 
-    type state_t is (S0, S1, S2, S3, S4, S5, S6);
+    type state_t is (S1, S2, S3, S4, S5, S6);
 
     signal state                : state_t := S1;
     signal rnd                  : integer;
@@ -49,19 +49,14 @@ begin
 
     ellipse_quadrant <= std_ulogic_vector(to_unsigned(i_quadrant, ellipse_quadrant'length));
 
+    plot(ix, iy, icol);
+
     ix <= to_integer(pixel_x);
     iy <= to_integer(pixel_y);
 
-    p_pixel_out : process(all)
-    begin
-        if pixel_rdy = '1' then
-            plot(ix, iy, icol);
-        end if;
-    end process p_pixel_out;
-
     p_eg: process(all)
         variable rand           : real := 0.0;
-        variable sd1, sd2       : positive := 1;
+        variable sd1, sd2       : positive := 99;
 
         impure function rand_int(min_val, max_val : integer) return integer is
             variable r : real;
@@ -70,48 +65,54 @@ begin
             return integer(
                 round(r * real(max_val - min_val + 1) + real(min_val) - 0.5));
         end function;
+
     begin
         if reset then
-            state <= S0;
+            state <= S1;
         elsif rising_edge(clk) then
-
             case state is
                 when S1 =>
                     xc <= to_signed(rand_int(0, 799), xc'length);
-                    yc <= to_signed(rand_int(0, 600), yc'length);
+                    yc <= to_signed(rand_int(0, 599), yc'length);
                     xr <= to_signed(rand_int(0, 400), xr'length);
                     yr <= to_signed(rand_int(0, 400), yr'length);
-                    i_quadrant <= 0;
-
-                    state <= state_t'succ(state);
-
-                when S2 =>
-
-                    icol <= integer(rand_int(0, 2 ** 24 - 1));
-                    state <= state_t'succ(state);
-                    
-                when S3 =>
-                    ellipse_enable <= '1';
-                    ellipse_run <= '1';
+                    ellipse_enable <= '0';
+                    ellipse_run <= '0';
                     ellipse_filled <= '1';
                     ena_pause <= '0';
-                    state <= state_t'succ(state);
+                    state <= S2;
+
+                when S2 =>
+                    i_quadrant <= 0;
+
+                    icol <= integer(rand_int(0, 2 ** 24 - 1));
+                    ellipse_enable <= '1';
+                    ellipse_run <= '1';
+                    state <= S3;
+
+                when S3 =>
+                    ellipse_run <= '0';
+                    state <= S4;
 
                 when S4 =>
-
-                    state <= state_t'succ(state);
-
+                    state <= S5;
+                    
                 when S5 =>
-                    if pixel_rdy = '1' then
-                        state <= S4;
+                    if not ellipse_busy then
+                        state <= S6;
                     end if;
-                    if ellipse_complete = '1' and i_quadrant = 3 then
+
+                when S6 =>
+                    if i_quadrant = 3 then
                         state <= S1;
-                    elsif ellipse_complete = '1' and i_quadrant /= 3 then
+                    else
                         i_quadrant <= i_quadrant + 1;
+                        ellipse_run <= '1';
                         state <= S3;
                     end if;
+
                 when others =>
+                    assert false report "state=" & state_t'image(state) severity note;
                     std.env.stop(0);
             end case;
         end if;
@@ -127,23 +128,23 @@ begin
         port map
         (
             -- inputs
-            clk         => clk,                     -- 125 MHz pixel clock
-            reset       => reset,                   -- asynchronous reset
-            enable      => ellipse_enable,          -- logic enable
-            run         => ellipse_run,             -- '1' to draw/run the units
-            quadrant    => ellipse_quadrant,        -- specifies which quadrant of the ellipse to draw
+            clk             => clk,                 -- 125 MHz pixel clock
+            reset           => reset,               -- asynchronous reset
+            enable          => ellipse_enable,      -- logic enable
+            run             => ellipse_run,         -- '1' to draw/run the units
+            quadrant        => ellipse_quadrant,    -- specifies which quadrant of the ellipse to draw
             ellipse_filled  => ellipse_filled,      -- x-filling when drawing an ellipse
-            xc          => xc,                      -- 12 bit x-coordinate for the center of the ellipse
-            yc          => yc,                      -- 12 bit y-coordinate for the center of the ellipse
-            xr          => xr,                      -- 12 bit x-radius - width of the ellipse
-            yr          => yr,                      -- 12 bit y-radius - height of the ellipse
-            ena_pause   => ena_pause,               -- set '1' to pause ellie while it is drawing
+            xc              => xc,                  -- 12 bit x-coordinate for the center of the ellipse
+            yc              => yc,                  -- 12 bit y-coordinate for the center of the ellipse
+            xr              => xr,                  -- 12 bit x-radius - width of the ellipse
+            yr              => yr,                  -- 12 bit y-radius - height of the ellipse
+            ena_pause       => ena_pause,           -- set '1' to pause ellie while it is drawing
 
 
             -- outputs
-            busy        => ellipse_busy,            -- '1' when line generator is running
-            x_coord     => pixel_x,                 -- 13-bit x-coordinate for current pixel 
-            y_coord     => pixel_y,                 -- 13-bit y-coordinate for current pixel
+            busy            => ellipse_busy,        -- '1' when line generator is running
+            x_coord         => pixel_x,             -- 13-bit x-coordinate for current pixel 
+            y_coord         => pixel_y,             -- 13-bit y-coordinate for current pixel
             pixel_data_rdy  => pixel_rdy,           -- '1' when coordinate outputs are valid
             ellipse_complete => ellipse_complete    -- '1' when ellipse is completed
         );
