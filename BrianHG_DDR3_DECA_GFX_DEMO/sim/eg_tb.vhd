@@ -49,7 +49,12 @@ begin
 
     ellipse_quadrant <= std_ulogic_vector(to_unsigned(i_quadrant, ellipse_quadrant'length));
 
-    plot(ix, iy, icol);
+    p_plot : process(all)
+    begin
+        if pixel_rdy then
+            plot(ix, iy, icol);
+        end if;
+    end process p_plot;
 
     ix <= to_integer(pixel_x);
     iy <= to_integer(pixel_y);
