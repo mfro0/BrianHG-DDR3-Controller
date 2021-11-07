@@ -15,7 +15,7 @@ architecture sim of eg_tb is
     signal reset,
            ellipse_enable,
            ellipse_run          : std_ulogic := '0';
-    signal ellipse_quadrant     : std_ulogic_vector(1 downto 0);
+    signal ellipse_quadrant     : natural range 0 to 3;
     signal ellipse_filled       : std_ulogic := '0';
 
     signal xc,
@@ -30,7 +30,6 @@ architecture sim of eg_tb is
     signal pixel_rdy,
            ellipse_complete     : std_ulogic := '0';
     signal ix, iy, icol         : integer := 0;
-    signal i_quadrant           : integer range 0 to 4 := 0;
 
     type state_t is (S1, S2, S3, S4, S5, S6);
 
@@ -46,8 +45,6 @@ architecture sim of eg_tb is
 
 begin
     clk <= not clk after 8 ns;
-
-    ellipse_quadrant <= std_ulogic_vector(to_unsigned(i_quadrant, ellipse_quadrant'length));
 
     p_plot : process(all)
     begin
@@ -88,7 +85,7 @@ begin
                     state <= S2;
 
                 when S2 =>
-                    i_quadrant <= 0;
+                    ellipse_quadrant <= 0;
 
                     icol <= integer(rand_int(0, 2 ** 24 - 1));
                     ellipse_enable <= '1';
@@ -108,10 +105,10 @@ begin
                     end if;
 
                 when S6 =>
-                    if i_quadrant = 3 then
+                    if ellipse_quadrant = 3 then
                         state <= S1;
                     else
-                        i_quadrant <= i_quadrant + 1;
+                        ellipse_quadrant <= ellipse_quadrant + 1;
                         ellipse_run <= '1';
                         state <= S3;
                     end if;
