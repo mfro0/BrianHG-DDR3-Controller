@@ -1,4 +1,6 @@
 eg_tb
 *.o
 *.cf
+*.swp
+*.so
 intel
