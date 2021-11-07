@@ -684,7 +684,6 @@ set_global_assignment -name SYSTEMVERILOG_FILE ../BrianHG_DDR3/BrianHG_DDR3_GEN_
 set_global_assignment -name SYSTEMVERILOG_FILE ../BrianHG_DDR3/altera_gpio_lite.sv
 set_global_assignment -name SYSTEMVERILOG_FILE ../BrianHG_DDR3/BrianHG_DDR3_CONTROLLER_top.sv
 set_global_assignment -name SYSTEMVERILOG_FILE ../BrianHG_DDR3/BrianHG_DDR3_COMMANDER.sv
-set_global_assignment -name SYSTEMVERILOG_FILE ../BrianHG_DDR3_GFX_source/BrianHG_draw_test_patterns.sv
 set_global_assignment -name SYSTEMVERILOG_FILE ../BrianHG_DDR3_GFX_source/BrianHG_display_rmem.sv
 set_global_assignment -name SYSTEMVERILOG_FILE ../BrianHG_DDR3_GFX_source/BrianHG_scroll_screen.sv
 set_global_assignment -name MIF_FILE line_buf_init.mif
@@ -694,4 +693,6 @@ set_global_assignment -name VERILOG_FILE vpg_source/BHG_vga_generator.v
 set_global_assignment -name VERILOG_FILE vpg_source/pll/pll.v
 set_global_assignment -name VERILOG_FILE I2C_HDMI_Config.v
 set_global_assignment -name VERILOG_FILE I2C_Controller.v
+set_global_assignment -name VHDL_FILE test_pattern_generator.vhd
+set_global_assignment -name VHDL_FILE rnd.vhd
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

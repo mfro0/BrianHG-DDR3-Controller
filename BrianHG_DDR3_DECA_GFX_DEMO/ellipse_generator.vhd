@@ -37,7 +37,7 @@
         reset           : in std_ulogic;                    -- asynchronous reset
         enable          : in std_ulogic;                    -- logic enable
         run             : in std_ulogic;                    -- '1' to draw/run the units
-        quadrant        : in std_ulogic_vector(1 downto 0); -- specifies which quadrant of the ellipse to draw
+        quadrant        : in natural range 0 to 3;          -- specifies which quadrant of the ellipse to draw
         ellipse_filled  : in std_ulogic;                    -- x-filling when drawing an ellipse
         xc,                                                 -- 12 bit x-coordinate for the center of the ellipse
         yc,                                                 -- 12 bit y-coordinate for the center of the ellipse
@@ -205,7 +205,7 @@ begin
                         if run then
                             -- load values and begin drawing the ellipse
                             -- initialise starting coordinates and direction for immediate plotting
-                            quadrant_latch <= to_integer(unsigned(quadrant));
+                            quadrant_latch <= quadrant;
                             
                             if xr = 0 and yr = 0 then       -- drawing only a single center point
                                 x <= (others => '0');       -- initialise starting x pixel location - switch to x_coord

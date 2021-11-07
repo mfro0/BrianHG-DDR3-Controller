@@ -438,7 +438,7 @@ logic CMD_vid_xena,CMD_vid_yena,CMD_ypos;
 // *****************************************************************
 // Demo BHG draw graphics into DDR3 ram.
 // *****************************************************************
-BrianHG_draw_test_patterns #(
+test_pattern_generator #(
                         .PORT_ADDR_SIZE      ( PORT_ADDR_SIZE        )  // Must match PORT_ADDR_SIZE.
 ) BHG_draw_test_patterns (
                         .CLK_IN              ( CLK_IN                ),

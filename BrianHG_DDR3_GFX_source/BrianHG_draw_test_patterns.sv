@@ -507,11 +507,11 @@ endmodule
 // ********************************************************************************************
 // ********************************************************************************************
 // ********************************************************************************************
-module rnd ( clk, rst, ena, load, seed, out );
+module rnd ( clk, rst, ena, load, seed, rout );
 
 input             clk, rst, ena, load;
 input      [31:0] seed ;
-output reg [31:0] out ;
+output reg [31:0] rout ;
 
 reg[36:0] CASR;
 reg[42:0] LFSR;
@@ -532,7 +532,7 @@ always @(posedge clk) begin
                     CASR[36:0] <= ( {CASR[35:0],CASR[36]} ^ {CASR[0],CASR[36:1]} ^ CASR[27]<<27 ) ;
                     LFSR[42:0] <= ( {LFSR[41:0],LFSR[42]} ^ LFSR[42]<<41 ^ LFSR[42]<<20 ^ LFSR[42]<<1 ) ;
 
-                    out [31:0] <= ( LFSR [31:0] ^ CASR[31:0] );
+                    rout [31:0] <= ( LFSR [31:0] ^ CASR[31:0] );
 
     end
 end
