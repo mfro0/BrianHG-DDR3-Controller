@@ -1,11 +1,11 @@
-.swp
-.cmake
+*.swp
+*.cmake
 CMakeCache.txt
 CMakeFiles
-.user
+*.user
 Makefile
 .cmake
 ellipse
 ellipse_autogen
-.so
+*.so
 
