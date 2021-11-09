@@ -38,7 +38,7 @@ entity test_pattern_generator is
         reset                   : in std_ulogic;
         
         disp_pixel_bytes        : in std_ulogic_vector(2 downto 0);         -- 4=32 bit pixels, 2=16bit pixels, 1=8bit pixels.
-        disp_mem_addr           : in std_ulogic_vector(31 downto 0);        -- Beginning memory address of graphic bitmap pixel position 0x0.
+        disp_mem_addr           : in integer;                               -- Beginning memory address of graphic bitmap pixel position 0x0.
         disp_bitmap_width       : in integer range 0 to 2 ** 16 - 1;        -- The bitmap width of the graphic in memory.
         disp_bitmap_height      : in integer range 0 to 2 ** 16 - 1;        -- The bitmap width of the graphic in memory.
 
@@ -73,7 +73,7 @@ architecture rtl of test_pattern_generator is
     
     signal color,
            xycol1,
-           xycon2,
+           xycol2,
            xycol3                   : std_ulogic_vector(31 downto 0) := (others => '0');
     signal xyr1,
            xyr2,
@@ -115,6 +115,8 @@ architecture rtl of test_pattern_generator is
     signal pixel_byte_shift         : natural range 0 to 4;
     signal dataout                  : std_ulogic_vector(PORT_ADDR_SIZE + PIXEL_WIDTH - 1 downto 0);
 begin
+    write_mask_out <= (others => '1');
+    
     i_rnd : entity work.rnd
         port map
         (
@@ -206,125 +208,175 @@ begin
     -- translate inputs
     -- convert the pixel width input into a bit shift for addressing pixels
     pixel_byte_shift <= 1 when to_integer(unsigned(disp_pixel_bytes)) = 2 else
-                        4 when to_integer(unsigned(disp_pixel_bytes)) = 4 else
+                        2 when to_integer(unsigned(disp_pixel_bytes)) = 4 else
                         0;
 
     p_sm : process(all)
     begin
-        if reset then
-            prog_pc <= 0;
-            counter <= 0;
-        elsif rising_edge(cmd_clk) then
-            case prog_pc is
-                when 0 =>
-                    counter <= 0;
-                    elli_count <= 0;
-                    sel_draw <= '0';
-                    
-                    case buttons_l is
-                        when "11" => prog_pc <= prog_pc + 1;
-                        when "01" => prog_pc <= 32;
-                        when "10" => prog_pc <= 32;
-                        when others => null;
-                    end case;
-                
-                when 1 =>
-                    sel_draw <= '1';
-                    if switches_l(0) = '1' or buttons_l /= 2d"3" then
-                        prog_pc <= 0;
-                    elsif elli_busy then
-                        elli_ena <= '0';
-                    else
-                        prog_pc <= prog_pc + 1;
-                    end if;
-                
-                when 2 =>
-                    if elli_count = elli_fill_ratio then
-                        elli_fill <= '1';
+        if rising_edge(cmd_clk) then
+            if reset then
+                prog_pc <= 0;
+                counter <= 0;
+            else
+                case prog_pc is
+                    when 0 =>
+                        counter <= 0;
                         elli_count <= 0;
-                    else
-                        elli_fill <= '0';
-                        elli_count <= elli_count + 1;
-                    end if;
-                    elli_xc <= "0" & signed(rnd_num(elli_bits - 1 downto 1));
-                    elli_yc <= "00" & signed(rnd_num(elli_yc'length - 1 downto 2));
-                    prog_pc <= prog_pc + 1;
+                        sel_draw <= '0';
+                    
+                        case buttons_l is
+                            when "11" => prog_pc <= prog_pc + 1;
+                            when "01" => prog_pc <= 32;
+                            when "10" => prog_pc <= 32;
+                            when others => null;
+                        end case;
+                
+                    when 1 =>           -- no button pressed
+                        sel_draw <= '1';
+                        if switches_l(0) = '1' or buttons_l /= 2d"3" then
+                            prog_pc <= 0;
+                        elsif elli_busy then
+                            elli_ena <= '0';
+                        else
+                            prog_pc <= prog_pc + 1;
+                        end if;
+                
+                    when 2 =>           -- elli is free, begin loading random 
+                        if elli_count = elli_fill_ratio then
+                            elli_fill <= '1';
+                            elli_count <= 0;
+                        else
+                            elli_fill <= '0';
+                            elli_count <= elli_count + 1;
+                        end if;
+                        elli_xc <= "0" & signed(rnd_num(rnd_num'length - 1 downto rnd_num'length - elli_bits + 1));
+                        elli_yc <= "00" & signed(rnd_num(elli_yc'length - 1 downto 2));
+                        prog_pc <= prog_pc + 1;
 
-                when 3 =>
-                    elli_xr <= "0000" & signed(rnd_num(elli_bits - 4 downto 1));
-                    elli_yr <= "0000" & signed(rnd_num(16 downto elli_bits - 5));
-                    prog_pc <= prog_pc + 1;
-                    
-                when 4 =>
-                    elli_quad <= 0;
-                    color <= rnd_num(31 downto 0);
-                    prog_pc <= prog_pc + 1;
-                
-                when 5 =>
-                    elli_ena <= '1';
-                    elli_run <= '1';
-                    prog_pc <= prog_pc + 1;
-                
-                when 6 =>
-                    elli_run <= '0';
-                    prog_pc <= prog_pc + 1;
-                    
-                when 7 =>
-                    if not elli_busy and not pixel_in_pipe then
+                    when 3 =>
+                        elli_xr <= "0000" & signed(rnd_num(elli_bits - 4 downto 1));
+                        elli_yr <= "0000" & signed(rnd_num(16 downto elli_bits - 5));
                         prog_pc <= prog_pc + 1;
-                    end if;
-                
-                when 8 =>
-                    if elli_quad = 3 then
-                        prog_pc <= 1;
-                    else
-                        elli_quad <= elli_quad + 1;
-                        prog_pc <= 5;
-                    end if;
-                
-                when 31 =>
-                    prog_pc <= 0;
                     
-                when 32 =>
-                    draw_x <= (others => '0');
-                    draw_y <= (others => '0');
-                    rnd_sel <= buttons_l(0);
-                    if buttons_l = 2d"3" then
+                    when 4 =>
+                        elli_quad <= 0;
+                        color <= rnd_num;
+                        prog_pc <= prog_pc + 1;
+                
+                    when 5 =>
+                        elli_ena <= '1';
+                        elli_run <= '1';
+                        prog_pc <= prog_pc + 1;
+                
+                    when 6 =>
+                        elli_run <= '0';
+                        prog_pc <= prog_pc + 1;
+                    
+                    when 7 =>
+                        if not elli_busy and not pixel_in_pipe then
+                            prog_pc <= prog_pc + 1;
+                        end if;
+                
+                    when 8 =>
+                        if elli_quad = 3 then
+                            prog_pc <= 1;
+                        else
+                            elli_quad <= elli_quad + 1;
+                            prog_pc <= 5;
+                        end if;
+                
+                    when 31 =>
                         prog_pc <= 0;
-                        draw_ena <= '0';
-                    else
-                        prog_pc <= prog_pc + 1;
-                    end if;
                     
-                when 33 =>
-                    if pixel_cache_busy then
-                        draw_ena <= '1';
-                        if rnd_sel then
-                            color(31 downto 0) <= 8x"00" & ucounter(20 downto 13) & ucounter(16 downto 1);
+                    when 32 =>
+                        draw_x <= (others => '0');
+                        draw_y <= (others => '0');
+                        rnd_sel <= buttons_l(0);
+                        if buttons_l = 2d"3" then
+                            prog_pc <= 0;
+                            draw_ena <= '0';
                         else
-                            color <= rnd_num;
+                            prog_pc <= prog_pc + 1;
                         end if;
-                        counter <= counter + 1;
-                        
-                        if draw_x < disp_bitmap_width + 1 then
-                            draw_x <= draw_x + 1;
-                        else
-                            draw_x <= (others => '0');
-                            if draw_y < disp_bitmap_height - 1 then
-                                draw_y <= draw_y + 1;
+                    
+                    when 33 =>
+                        if not pixel_cache_busy then
+                            draw_ena <= '1';
+                            if rnd_sel then
+                                color <= 8x"00" & ucounter(20 downto 13) & ucounter(16 downto 1);
                             else
-                                draw_y <= (others => '0');
-                                prog_pc <= 32;
+                                color <= rnd_num;
                             end if;
+                            counter <= counter + 1;
+                        
+                            if draw_x < disp_bitmap_width - 1 then
+                                draw_x <= draw_x + 1;
+                            else
+                                draw_x <= (others => '0');
+                                if draw_y < disp_bitmap_height - 1 then
+                                    draw_y <= draw_y + 1;
+                                else
+                                    draw_y <= (others => '0');
+                                    prog_pc <= 32;
+                                end if;
+                            end if;
+                        else
+                            draw_ena <= '0';
                         end if;
-                    else
-                        draw_ena <= '0';
-                    end if;
-                when others =>
-                    prog_pc <= prog_pc + 1;
-            end case;
+                
+                    when others =>
+                        prog_pc <= prog_pc + 1;
+                end case;
+            end if;
         end if;
     end process p_sm;
-                            
+
+    pixel_in_pipe <= xyr1 or xyr2 or xyr3;
+    
+    p_pixel_out : process(all)
+    begin
+        if rising_edge(cmd_clk) then
+            if reset then
+                xyr1 <= '0';
+                xyr2 <= '0';
+                xyr3 <= '0';
+                write_req_cache <= '0';
+            else
+                -- step 1, select between elli output and other graphics generators
+                if sel_draw then 
+                    xyr1 <= elli_out_rdy;
+                    x1 <= elli_xout;
+                    y1 <= elli_yout;
+                else 
+                    xyr1 <= draw_ena;
+                    x1 <= draw_x;
+                    y1 <= draw_y;
+                end if;
+                xycol1 <= color;
+                
+                -- step 2, make sure the coordinates are inside the display area
+                if x1 >= 0 and x1 < disp_bitmap_width and y1 >= 0 and y1 <= disp_bitmap_height then
+                    xyr2 <= xyr1;   -- if draw coordinates are inside the bitmap, allow the pixel ready through
+                else
+                    xyr2 <= '0';      -- otherwise, strip out
+                end if;
+                x2 <= x1;
+                y2 <= y1;
+                xycol2 <= xycol1;
+                
+                -- step 3, compute the base y coordinate address offset
+                xyr3 <= xyr2;
+                addr1 <= std_ulogic_vector(resize(unsigned(disp_mem_addr + (y2 * disp_bitmap_width)), addr1'length));
+                x3 <= x2;
+                xycol3 <= xycol2;
+                
+                -- step 4, add the x position coordinate and output pixel write fifo
+                write_req_cache <= xyr3;
+                write_adr <= std_ulogic_vector(shift_left(unsigned(addr1) + unsigned(x3), pixel_byte_shift));
+                write_data <= xycol3;
+            end if;
+        end if; -- rising_edge(cmd_clk)
+    end process p_pixel_out;
+    
     ucounter <= std_ulogic_vector(to_unsigned(counter, ucounter'length));    
 end architecture rtl;
