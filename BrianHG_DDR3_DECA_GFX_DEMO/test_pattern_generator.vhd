@@ -37,7 +37,7 @@ entity test_pattern_generator is
         cmd_clk                 : in std_ulogic;
         reset                   : in std_ulogic;
         
-        disp_pixel_bytes        : in std_ulogic_vector(2 downto 0);         -- 4=32 bit pixels, 2=16bit pixels, 1=8bit pixels.
+        disp_pixel_bytes        : in natural range 0 to 7;                  -- 4=32 bit pixels, 2=16bit pixels, 1=8bit pixels.
         disp_mem_addr           : in integer;                               -- Beginning memory address of graphic bitmap pixel position 0x0.
         disp_bitmap_width       : in integer range 0 to 2 ** 16 - 1;        -- The bitmap width of the graphic in memory.
         disp_bitmap_height      : in integer range 0 to 2 ** 16 - 1;        -- The bitmap width of the graphic in memory.
@@ -106,7 +106,7 @@ architecture rtl of test_pattern_generator is
     signal elli_out_rdy,
            elli_done                : std_ulogic;
     signal elli_count               : integer range 0 to 2 ** 7 - 1;
-    constant elli_fill_ratio        : integer := 5;
+    constant elli_fill_ratio        : integer := 0;
     signal read_req_cache,
            write_req_cache          : std_ulogic;
     signal pixel_cache_busy,
@@ -166,7 +166,7 @@ begin
     write_data_out <= dataout(dataout'length - write_adr_out'length - 1 downto 0);
     
     -- manage pixel write cache FIFO to ddr3 write port out
-    read_req_cache <= not pixel_cache_empty and not write_busy_in;              -- Quartus doesn't know about aggregate decomposition (VHDL 2008):w
+    read_req_cache <= not pixel_cache_empty and not write_busy_in;              -- Quartus doesn't know about aggregate decomposition (VHDL 2008)
     
     write_req_out <= not pixel_cache_empty and not write_busy_in;
     
@@ -207,8 +207,8 @@ begin
     
     -- translate inputs
     -- convert the pixel width input into a bit shift for addressing pixels
-    pixel_byte_shift <= 1 when to_integer(unsigned(disp_pixel_bytes)) = 2 else
-                        2 when to_integer(unsigned(disp_pixel_bytes)) = 4 else
+    pixel_byte_shift <= 1 when disp_pixel_bytes = 2 else
+                        2 when disp_pixel_bytes = 4 else
                         0;
 
     p_sm : process(all)
