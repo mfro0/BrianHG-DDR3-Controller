@@ -91,7 +91,11 @@ Next major release v2.0 targets.
 ---------------------------------
 Nov 1, 20201
 
+<<<<<<< HEAD
 Demo preview v1.5 DECA eval board .sof programming file:
+=======
+Demo preview v1.5 DECA eval board .sof programming file: (The full v1.5 project files comming in 2 days)
+>>>>>>> mergeit
 ---------------------------------
 Nov 1, 20201
 

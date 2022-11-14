@@ -211,6 +211,12 @@ begin
                         2 when disp_pixel_bytes = 4 else
                         0;
 
+    b_test: block (rising_edge(cmd_clk)) is
+        signal latch    : std_ulogic := '0';
+    begin
+        latch <= '1';
+    end block b_test;
+    
     p_sm : process(all)
     begin
         if rising_edge(cmd_clk) then
