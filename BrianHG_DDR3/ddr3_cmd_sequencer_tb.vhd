@@ -22,7 +22,6 @@ entity ddr3_cmd_sequencer_tb is
         -- DDR3 controller configuration parameter settings
         PORT_VECTOR_SIZE        : integer := 16
     );
-    
 end entity ddr3_cmd_sequencer_tb;
 
 architecture sim of ddr3_cmd_sequencer_tb is
@@ -71,9 +70,7 @@ architecture sim of ddr3_cmd_sequencer_tb is
             read_cal_pat_v          : out std_ulogic
         );
     end component BrianHG_DDR3_CMD_SEQUENCER;
-    
-    subtype str80 is string(1 to 80);
-    
+
     function strpad(s : string; l : natural) return string is
         variable r : string(1 to l);
     begin
@@ -85,6 +82,7 @@ architecture sim of ddr3_cmd_sequencer_tb is
         end loop;
         return r;
     end function strpad;
+
     --
     -- tx_ddr3_cmd(src, dest, ln)
     --
@@ -94,7 +92,7 @@ architecture sim of ddr3_cmd_sequencer_tb is
     begin
         assert false report "in_ln=" & ln_in.all severity note;
     end procedure tx_ddr3_cmd;
-    
+
     --
     -- execute_ascii_file(<source ascii file name>)
     --
@@ -123,7 +121,7 @@ architecture sim of ddr3_cmd_sequencer_tb is
     begin
         line_number := 1;
         -- fout := output;
-        
+
         assert false report source_file_name & string'(" opened") severity note;
         while not endfile(fin) loop
             readline(fin, in_ln);
@@ -181,14 +179,14 @@ architecture sim of ddr3_cmd_sequencer_tb is
 
     type DDR_CMD_NAME is (MRS, REF, PRE, ACT, WRI, REA, ZQC, NOP,
                           XOP1, XOP2, XOP3, XOP4, XOP5, XOP6, XOP7, NOP2);
-                          
+
     constant tb_command_script_file : string := "DDR3_CMD_SEQ_script.txt";
     constant script_cmd             : string := "*** POWER UP ***";
     constant period                 : time := 500000 ns / CLK_MHZ_IN;    
     signal script_line              : std_ulogic_vector(12 downto 0);
-    
+
     signal auto_wait                : boolean := false;
-    
+
     signal in_busy                  : std_ulogic;
     signal in_rd_vector             : std_ulogic_vector(PORT_VECTOR_SIZE - 1 downto 0);
     signal i_cmd_ack                : std_ulogic;
@@ -217,7 +215,6 @@ architecture sim of ddr3_cmd_sequencer_tb is
     signal idle                     : std_ulogic;
     signal wdt_counter              : natural range 0 to 255;
 begin
-    
     b_cmd_sequencer : block
         signal out_txb              : std_ulogic_vector(7 downto 0);
         signal out_read_ready       : std_ulogic;
@@ -270,9 +267,9 @@ begin
                 read_cal_pat_v          => read_cal_pat_v
             );
     end block b_cmd_sequencer;
-        
+
     cmd_clk <= not cmd_clk after period when not rst_in;
-    
+
     -- initial begin
     initial_begin : process
     begin
@@ -288,11 +285,11 @@ begin
         cmd_ack <= '0';
         auto_wait <= false;
         ref_req <= '0';
-        
+
         rst_in <= '1';
         wait for 50 ns;
         rst_in <= '0';
-        
+
         while (true) loop
             wait until rising_edge(cmd_clk);
             assert false report "call execute_ascii_file" severity note;
