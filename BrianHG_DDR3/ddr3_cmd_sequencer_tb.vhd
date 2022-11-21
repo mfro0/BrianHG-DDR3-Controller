@@ -125,7 +125,7 @@ architecture sim of ddr3_cmd_sequencer_tb is
         assert false report source_file_name & string'(" opened") severity note;
         while not endfile(fin) loop
             readline(fin, in_ln);
-            assert false report "in_ln=" & in_ln.all severity note;
+            -- assert false report "in_ln=" & in_ln.all severity note;
             if in_ln /= null then
                 cmd_start := 0;
                 cmd_end := 0;
@@ -144,29 +144,31 @@ architecture sim of ddr3_cmd_sequencer_tb is
                 if cmd_start < cmd_end then
                     command_in := new string(1 to cmd_end - cmd_start + 1);
                     command_in.all := in_ln(cmd_start to cmd_end);
-                    assert false report "cmd=" & command_in.all severity note;
+                    -- assert false report "cmd=" & command_in.all severity note;
                 end if;
                 
                 if command_in /= null then
                     s := strpad(command_in.all, s'length);
                     case s is
                         when "CMD          " =>
+                            assert false report "CMD requested" severity note;
                             tx_ddr3_cmd(in_ln, line_number);
                         when "RESET        " =>
                             --script_line := line_number;
                             --script_cmd := command_in;
                             --send_rst;
-                            assert false report "reset" severity note;
+                            assert false report "RESET requested" severity note;
                         when "WAIT_IN_READY" =>
-                            --
+                            assert false report "WAIT_IN_READY requested" severity note;
                         when "LOG_FILE     " =>
-                            --
+                            assert false report "LOG_FILE requested" severity note;
                         when "END_LOG_FILE " =>
-                            --
+                            assert false report "END_LOG_FILE requested" severity note;
                         when "STOP         " =>
-                            --
+                            assert false report "simulation STOP requested" severity note;
                         when "END          " =>
-                            --
+                            assert false report "simulation END reqested" severity note;
+                            std.env.stop(0);
                         when others => 
                             assert false report "cmd #" & s & "# not recognized (" &
                                                 command_in.all & ")" severity note;
