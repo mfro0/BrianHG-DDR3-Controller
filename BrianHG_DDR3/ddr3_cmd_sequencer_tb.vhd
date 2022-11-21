@@ -90,7 +90,7 @@ architecture sim of ddr3_cmd_sequencer_tb is
     --
     procedure tx_ddr3_cmd(variable ln_in : line; line_number : natural) is
     begin
-        assert false report "in_ln=" & ln_in.all severity note;
+
     end procedure tx_ddr3_cmd;
 
     --
@@ -125,15 +125,20 @@ architecture sim of ddr3_cmd_sequencer_tb is
         assert false report source_file_name & string'(" opened") severity note;
         while not endfile(fin) loop
             readline(fin, in_ln);
+            assert false report "in_ln=" & in_ln.all severity note;
             if in_ln /= null then
                 cmd_start := 0;
                 cmd_end := 0;
                 for i in in_ln'range loop
                     if in_ln(i) = '@' then
                         cmd_start := i + 1;
-                    elsif cmd_start > 0 and in_ln(i) = ' ' then
-                        cmd_end := i - 1;
-                        exit;
+                    elsif cmd_start > 0 then
+                        if in_ln(i) = ' ' then
+                            cmd_end := i - 1;
+                            exit;
+                        elsif i = in_ln'right then
+                            cmd_end := i;
+                        end if;
                     end if;
                 end loop;
                 if cmd_start < cmd_end then
@@ -169,6 +174,7 @@ architecture sim of ddr3_cmd_sequencer_tb is
                     deallocate(command_in);
                 end if;
             end if;
+            line_number := line_number + 1;
         end loop;   
         std.env.stop(0);        
     end procedure execute_ascii_file;
