@@ -77,7 +77,7 @@ architecture sim of ddr3_cmd_sequencer_tb is
         for i in s'range loop
             r(i) := s(i);
         end loop;
-        for i in s'right to r'right loop
+        for i in s'right + 1 to r'right loop
             r(i) := ' ';
         end loop;
         return r;
@@ -144,7 +144,6 @@ architecture sim of ddr3_cmd_sequencer_tb is
                 
                 if command_in /= null then
                     s := strpad(command_in.all, s'length);
-                    deallocate(command_in);
                     case s is
                         when "CMD          " =>
                             tx_ddr3_cmd(in_ln, line_number);
@@ -163,8 +162,11 @@ architecture sim of ddr3_cmd_sequencer_tb is
                             --
                         when "END          " =>
                             --
-                        when others => null;
+                        when others => 
+                            assert false report "cmd #" & s & "# not recognized (" &
+                                                command_in.all & ")" severity note;
                     end case;
+                    deallocate(command_in);
                 end if;
             end if;
         end loop;   
