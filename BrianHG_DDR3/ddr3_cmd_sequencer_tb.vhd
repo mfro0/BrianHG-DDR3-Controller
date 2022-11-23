@@ -71,9 +71,9 @@ architecture sim of ddr3_cmd_sequencer_tb is
         );
     end component BrianHG_DDR3_CMD_SEQUENCER;
 
-    #
-    # create a new string from s with length l (must be larger than s'length)
-    #
+    --
+    -- create a new string from s with length l (must be larger than s'length)
+    --
     function strpad(s : string; l : natural) return string is
         variable r : string(1 to l);
         variable ind : natural;
