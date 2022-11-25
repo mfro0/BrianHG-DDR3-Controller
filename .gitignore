@@ -4,3 +4,8 @@
 */db
 */incremental_db
 */output_files
+modelsim.ini
+*wlf
+*vstf
+work
+transcript
