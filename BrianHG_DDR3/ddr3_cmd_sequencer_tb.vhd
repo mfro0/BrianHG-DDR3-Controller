@@ -98,7 +98,7 @@ architecture sim of ddr3_cmd_sequencer_tb is
     --
     -- tx the ddr3 command_in
     --
-    procedure tx_ddr3_cmd(variable ln_in : line; line_number : natural; start : natural) is
+    procedure tx_ddr3_cmd(variable ln_in : line; line_number : natural) is
         type cmd is (C_REFRESH, C_AWAIT, C_OUTENA, C_READ, C_WRITE, C_DELAY);
         type assoc is record
             keyword     : string(1 to 13);
@@ -112,20 +112,9 @@ architecture sim of ddr3_cmd_sequencer_tb is
                                ("READ         ", C_READ),
                                ("WRITE        ", C_WRITE),
                                ("DELAY        ", C_DELAY));
-        variable s      : natural;
     begin
-        s := start;
         assert false report "ln_in=" & ln_in.all severity note;
-        for i in s to ln_in.all'right loop
-            if ln_in.all(i) = ' ' then
-                s := i + 1;
-                exit;
-            end if;
-        end loop;
         
-        for i in s to ln_in.all'right loop
-            report character'image(ln_in.all(i)) severity note;
-        end loop;
     end procedure tx_ddr3_cmd;
 
     --
@@ -139,19 +128,20 @@ architecture sim of ddr3_cmd_sequencer_tb is
     procedure execute_ascii_file(source_file_name : string) is
         type cmd_selector is (C_RESET, C_WAIT_IN_READY, C_LOG_FILE, C_END_LOG_FILE,
                               C_CMD, C_STOP, C_END, C_NO_COMMAND);
+        type s_type is access string;
         type assoc is record
-            keyword     : string(1 to 13);
+            keyword     : s_type;
             selector    : cmd_selector;
         end record;
         type assoc_array is array(natural range <>) of assoc;
-        constant commands           : assoc_array :=
-                                      (("RESET        ", C_RESET),
-                                       ("WAIT_IN_READY", C_WAIT_IN_READY),
-                                       ("LOG_FILE     ", C_LOG_FILE),
-                                       ("END_LOG_FILE ", C_END_LOG_FILE),
-                                       ("CMD          ", C_CMD),
-                                       ("STOP         ", C_STOP),
-                                       ("END          ", C_END));
+        variable commands           : assoc_array(0 to 6) :=
+                                      ((new string'("RESET"), C_RESET),
+                                       (new string'("WAIT_IN_READY"), C_WAIT_IN_READY),
+                                       (new string'("LOG_FILE"), C_LOG_FILE),
+                                       (new string'("END_LOG_FILE"), C_END_LOG_FILE),
+                                       (new string'("CMD"), C_CMD),
+                                       (new string'("STOP"), C_STOP),
+                                       (new string'("END"), C_END));
         
         --
         -- Check command_string if it is equal to one of the strings in commands
@@ -159,46 +149,18 @@ architecture sim of ddr3_cmd_sequencer_tb is
         --
         -- Return C_NO_COMMAND if not found
         --
-        function to_command(command_string : string; l : natural) return cmd_selector is
-            variable cs : string(1 to l);
+        impure function to_command(command_string : string) return cmd_selector is
         begin
-            -- pad string with spaces to length l
-            cs := strpad(command_string, l);
             for i in commands'range loop
-                --report "compare #" & commands(i).keyword & 
-                --       "# against #" & cs & "#" severity note;
-                if (cs = commands(i).keyword) then
+                report "compare #" & commands(i).keyword.all & 
+                       "# against #" & command_string & "#" severity note;
+                if (command_string = commands(i).keyword.all) then
                     return commands(i).selector;
                 end if;
             end loop;
             return C_NO_COMMAND;
         end function to_command;
-        
-        procedure parse_word(variable ln : line; start, length : natural; str : out string;
-                             endpos : out natural) is
-            variable s, e   : natural;
-        begin
-            for i in ln'range loop
-                if ln(i) = '@' then
-                    s := i + 1;
-                elsif s > 0 then
-                    if ln(i) = ' ' then
-                        e := i - 1;
-                        exit;
-                    elsif i = ln'right then
-                        e := i;
-                    end if;
-                end if;
-            end loop;
-            if s /= e then
-                str(1 to e - s + 1) := ln(s to e);
-                str(e - s + 2 to str'length) := (others => ' ');
-            else
-                str(1 to length) := "             ";
-            end if;
-            endpos := e;  
-        end procedure parse_word;
-        
+
         variable fin_running,
                  r                  : integer;
         variable message_string,
@@ -212,8 +174,8 @@ architecture sim of ddr3_cmd_sequencer_tb is
         file fout                   : text;
         variable s                  : string(1 to 13);
         variable c                  : cmd_selector;
-        variable cmd                : string(1 to 13);
-        variable endpos             : natural;
+        variable cmd                : string(1 to 20);
+        variable cmd_len            : natural;
     begin
         line_number := 1;
         -- fout := output;
@@ -224,33 +186,38 @@ architecture sim of ddr3_cmd_sequencer_tb is
             -- assert false report "in_ln=" & in_ln.all severity note;
            
             if in_ln /= null then
-                parse_word(in_ln, 1, 13, cmd, endpos);
-                c := to_command(cmd, 13);
-                assert false report "cmd=" & cmd_selector'image(c) severity note;
+
+                sread(in_ln, cmd, cmd_len);
                 
-                case c is
-                    when C_CMD =>
-                        assert false report "CMD requested" severity note;
-                        tx_ddr3_cmd(in_ln, line_number, endpos);
-                    when C_RESET =>
-                        --script_line := line_number;
-                        --script_cmd := command_in;
-                        --send_rst;
-                        assert false report "RESET requested" severity note;
-                    when C_WAIT_IN_READY =>
-                        assert false report "WAIT_IN_READY requested" severity note;
-                    when C_LOG_FILE =>
-                        assert false report "LOG_FILE requested" severity note;
-                    when C_END_LOG_FILE =>
-                        assert false report "END_LOG_FILE requested" severity note;
-                    when C_STOP =>
-                        assert false report "simulation STOP requested" severity note;
-                    when C_END =>
-                        assert false report "simulation END reqested" severity note;
-                        std.env.stop(0);
-                    when others => 
-                        null;
-                end case;
+                -- assert false report "cmd=" & cmd & "cmd_len=" & integer'image(cmd_len) severity note;
+                if cmd(1) = '@' then
+                    c := to_command(cmd(2 to cmd_len));
+                    assert false report "cmd=" & cmd_selector'image(c) severity note;
+                
+                    case c is
+                        when C_CMD =>
+                            assert false report "CMD requested" severity note;
+                            tx_ddr3_cmd(in_ln, line_number);
+                        when C_RESET =>
+                            --script_line := line_number;
+                            --script_cmd := command_in;
+                            --send_rst;
+                            assert false report "RESET requested" severity note;
+                        when C_WAIT_IN_READY =>
+                            assert false report "WAIT_IN_READY requested" severity note;
+                        when C_LOG_FILE =>
+                            assert false report "LOG_FILE requested" severity note;
+                        when C_END_LOG_FILE =>
+                            assert false report "END_LOG_FILE requested" severity note;
+                        when C_STOP =>
+                            assert false report "simulation STOP requested" severity note;
+                        when C_END =>
+                            assert false report "simulation END reqested" severity note;
+                            std.env.stop(0);
+                        when others => 
+                            null;
+                    end case;
+                end if;
             end if;
             line_number := line_number + 1;
         end loop;   
