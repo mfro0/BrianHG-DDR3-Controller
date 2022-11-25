@@ -1,0 +1,13 @@
+*.wlf
+*.vstf
+_info*
+_lib*
+_vmake
+*.done
+*.rpt
+*.summary
+*.txt
+*.lst
+_vmake
+modelsim.ini
+transcript
