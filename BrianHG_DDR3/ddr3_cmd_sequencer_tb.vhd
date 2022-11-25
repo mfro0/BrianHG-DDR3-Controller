@@ -128,6 +128,13 @@ architecture sim of ddr3_cmd_sequencer_tb is
     procedure execute_ascii_file(source_file_name : string) is
         type cmd_selector is (C_RESET, C_WAIT_IN_READY, C_LOG_FILE, C_END_LOG_FILE,
                               C_CMD, C_STOP, C_END, C_NO_COMMAND);
+                              
+        --
+        -- the following (rather strange looking) construct allows for
+        -- (kind of) variable length strings in the "association array".
+        -- Unfortunately, this can't be made constant as VHDL does not allow
+        -- access type objects in constant arrays
+        --
         type s_type is access string;
         type assoc is record
             keyword     : s_type;
