@@ -1,3 +1,35 @@
+package generic_compare is
+    generic
+    (
+        type enum
+    );
+
+    type keyword_type is access string;
+
+    type assoc is record
+        keyword     : keyword_type;
+        selector    : enum;
+    end record; 
+    type assoc_array is array(natural range <>) of assoc;
+
+    procedure lookup(variable data : assoc_array; lookup : string; selector : out enum);
+end package generic_compare;
+
+package body generic_compare is
+    procedure lookup(variable data : assoc_array; lookup : string; selector : out enum) is
+    begin
+        for i in data'left to data'right loop
+            if data(i).keyword.all = lookup then
+                selector := data(i).selector;
+                return;
+            end if; 
+        end loop;
+        -- selector := enum'val(0);
+    end procedure lookup;
+end package body generic_compare;
+
+
+
 library ieee;
 
 use ieee.numeric_std.all;
@@ -76,23 +108,25 @@ architecture sim of ddr3_cmd_sequencer_tb is
     --
     -- tx the ddr3 command_in
     --
-    procedure tx_ddr3_cmd(variable ln_in : line; line_number : natural) is
-        type cmd is (C_REFRESH, C_AWAIT, C_OUTENA, C_READ, C_WRITE, C_DELAY);
-        type assoc is record
-            keyword     : string(1 to 13);
-            selector    : cmd;
-        end record;
-        type assoc_array is array(natural range <>) of assoc;
-        constant commands : assoc_array :=
-                              (("REFRESH      ", C_REFRESH),
-                               ("AWAIT        ", C_AWAIT),
-                               ("OUTENA       ", C_OUTENA),
-                               ("READ         ", C_READ),
-                               ("WRITE        ", C_WRITE),
-                               ("DELAY        ", C_DELAY));
+    procedure tx_ddr3_cmd(variable ln_in : inout line; line_number : natural) is
+        type cmd_type is (C_REFRESH, C_AWAIT, C_OUTENA, C_READ, C_WRITE, C_DELAY);
+ 
+        package cmd_compare is new work.generic_compare generic map (enum => cmd_type);
+        variable cmds : cmd_compare.assoc_array(0 to 5) :=
+                            ((new string'("REFRESH"), C_REFRESH),
+                             (new string'("AWAIT"), C_AWAIT),
+                             (new string'("OUTENA"), C_OUTENA),
+                             (new string'("READ"), C_READ),
+                             (new string'("WRITE"), C_WRITE),
+                             (new string'("DELAY"), C_DELAY));
+        variable cmd_str : string(1 to 20);
+        variable cmd        : cmd_type;
+        variable len        : natural;
     begin
-        assert false report "ln_in=" & ln_in.all severity note;
+        string_read(ln_in, cmd_str, len);
+        cmd_compare.lookup(cmds, cmd_str(1 to len), cmd);
         
+        assert false report "command=" & cmd_type'image(cmd) severity note;
     end procedure tx_ddr3_cmd;
 
     --
@@ -104,22 +138,10 @@ architecture sim of ddr3_cmd_sequencer_tb is
     -- the appropriate functions
     --
     procedure execute_ascii_file(source_file_name : string) is
-        type cmd_selector is (C_RESET, C_WAIT_IN_READY, C_LOG_FILE, C_END_LOG_FILE,
+        type cmd_type is (C_RESET, C_WAIT_IN_READY, C_LOG_FILE, C_END_LOG_FILE,
                               C_CMD, C_STOP, C_END, C_NO_COMMAND);
-                              
-        --
-        -- the following (rather strange looking) construct allows for
-        -- (kind of) variable length strings in the "association array".
-        -- Unfortunately, this can't be made constant as VHDL does not allow
-        -- access type objects in constant arrays
-        --
-        type s_type is access string;
-        type assoc is record
-            keyword     : s_type;
-            selector    : cmd_selector;
-        end record;
-        type assoc_array is array(natural range <>) of assoc;
-        variable commands           : assoc_array(0 to 6) :=
+        package cmd_compare is new work.generic_compare generic map (enum => cmd_type);                      
+        variable commands           : cmd_compare.assoc_array(0 to 6) :=
                                       ((new string'("RESET"), C_RESET),
                                        (new string'("WAIT_IN_READY"), C_WAIT_IN_READY),
                                        (new string'("LOG_FILE"), C_LOG_FILE),
@@ -127,24 +149,6 @@ architecture sim of ddr3_cmd_sequencer_tb is
                                        (new string'("CMD"), C_CMD),
                                        (new string'("STOP"), C_STOP),
                                        (new string'("END"), C_END));
-        
-        --
-        -- Check command_string if it is equal to one of the strings in commands
-        -- enumeration and return the respective element of the cmd_selector enumeration.
-        --
-        -- Return C_NO_COMMAND if not found
-        --
-        impure function to_command(command_string : string) return cmd_selector is
-        begin
-            for i in commands'range loop
-                report "compare #" & commands(i).keyword.all & 
-                       "# against #" & command_string & "#" severity note;
-                if (command_string = commands(i).keyword.all) then
-                    return commands(i).selector;
-                end if;
-            end loop;
-            return C_NO_COMMAND;
-        end function to_command;
 
         variable fin_running,
                  r                  : integer;
@@ -158,7 +162,7 @@ architecture sim of ddr3_cmd_sequencer_tb is
         variable out_ln             : line;
         file fout                   : text;
         variable s                  : string(1 to 13);
-        variable c                  : cmd_selector;
+        variable c                  : cmd_type;
         variable cmd                : string(1 to 20);
         variable cmd_len            : natural;
     begin
@@ -176,8 +180,9 @@ architecture sim of ddr3_cmd_sequencer_tb is
                 
                 -- assert false report "cmd=" & cmd & "cmd_len=" & integer'image(cmd_len) severity note;
                 if cmd(1) = '@' then
-                    c := to_command(cmd(2 to cmd_len));
-                    assert false report "cmd=" & cmd_selector'image(c) severity note;
+                    -- c := to_command(cmd(2 to cmd_len));
+                    cmd_compare.lookup(commands, cmd(2 to cmd_len), c);
+                    assert false report "cmd=" & cmd_type'image(c) severity note;
                 
                     case c is
                         when C_CMD =>
