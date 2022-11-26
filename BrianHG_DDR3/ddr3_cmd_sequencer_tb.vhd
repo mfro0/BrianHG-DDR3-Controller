@@ -72,28 +72,6 @@ architecture sim of ddr3_cmd_sequencer_tb is
     end component BrianHG_DDR3_CMD_SEQUENCER;
 
     --
-    -- create a new string from s with length l (must be larger than s'length)
-    --
-    function strpad(s : string; l : natural) return string is
-        variable r : string(1 to l);
-        variable ind : natural;
-    begin
-        assert l >= s'length report "cannot pad string with length " &
-                                    integer'image(s'length) & " to length " &
-                                    integer'image(l) & " without truncation"
-                                    severity error;
-        ind := 1;
-        for i in s'range loop
-            r(ind) := s(i);
-            ind := ind + 1;
-        end loop;
-        for i in ind to r'right loop
-            r(i) := ' ';
-        end loop;
-        return r;
-    end function strpad;
-
-    --
     -- tx_ddr3_cmd(src, dest, ln)
     --
     -- tx the ddr3 command_in
@@ -194,7 +172,7 @@ architecture sim of ddr3_cmd_sequencer_tb is
            
             if in_ln /= null then
 
-                sread(in_ln, cmd, cmd_len);
+                string_read(in_ln, cmd, cmd_len);
                 
                 -- assert false report "cmd=" & cmd & "cmd_len=" & integer'image(cmd_len) severity note;
                 if cmd(1) = '@' then
