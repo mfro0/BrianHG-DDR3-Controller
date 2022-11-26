@@ -1,3 +1,6 @@
+--
+-- generic package to provide universal keyword lookup
+--
 package generic_compare is
     generic
     (
@@ -119,7 +122,7 @@ architecture sim of ddr3_cmd_sequencer_tb is
                              (new string'("READ"), C_READ),
                              (new string'("WRITE"), C_WRITE),
                              (new string'("DELAY"), C_DELAY));
-        variable cmd_str : string(1 to 20);
+        variable cmd_str    : string(1 to 20);
         variable cmd        : cmd_type;
         variable len        : natural;
     begin
@@ -127,6 +130,17 @@ architecture sim of ddr3_cmd_sequencer_tb is
         cmd_compare.lookup(cmds, cmd_str(1 to len), cmd);
         
         assert false report "command=" & cmd_type'image(cmd) severity note;
+
+        case cmd is
+            when C_REFRESH =>
+                -- ref_req <= not ref_req;
+            when C_AWAIT =>
+            when C_OUTENA =>
+            when C_READ =>
+            when C_WRITE =>
+            when C_DELAY =>
+            when others =>
+        end case;
     end procedure tx_ddr3_cmd;
 
     --
@@ -180,7 +194,6 @@ architecture sim of ddr3_cmd_sequencer_tb is
                 
                 -- assert false report "cmd=" & cmd & "cmd_len=" & integer'image(cmd_len) severity note;
                 if cmd(1) = '@' then
-                    -- c := to_command(cmd(2 to cmd_len));
                     cmd_compare.lookup(commands, cmd(2 to cmd_len), c);
                     assert false report "cmd=" & cmd_type'image(c) severity note;
                 
