@@ -9,6 +9,7 @@ sim: $(SV_SRCS) $(SRCS)
 	vmap work work
 	vlog -sv -work work $(SV_SRCS)
 	vcom -work work $(VCOM_OPTS) $(VHDL_SRCS)
-
+run:
+	vsim -c ddr3_cmd_sequencer_tb -do ddr3_cmd_sequencer_sim.do
 
 

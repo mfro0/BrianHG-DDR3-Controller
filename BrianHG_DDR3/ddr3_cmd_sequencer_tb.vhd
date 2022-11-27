@@ -198,7 +198,6 @@ architecture sim of ddr3_cmd_sequencer_tb is
             -- assert false report "in_ln=" & in_ln.all severity note;
            
             if in_ln /= null then
-
                 string_read(in_ln, cmd, cmd_len);
                 
                 -- assert false report "cmd=" & cmd & "cmd_len=" & integer'image(cmd_len) severity note;
