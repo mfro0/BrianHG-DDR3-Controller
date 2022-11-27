@@ -114,7 +114,15 @@ architecture sim of ddr3_cmd_sequencer_tb is
     procedure tx_ddr3_cmd(variable ln_in : inout line; line_number : natural) is
         type cmd_type is (C_REFRESH, C_AWAIT, C_OUTENA, C_READ, C_WRITE, C_DELAY);
  
+        --
+        -- instantiate generic package with our specific enum type
+        --
         package cmd_compare is new work.generic_compare generic map (enum => cmd_type);
+        
+        --
+        -- provide the assoc list (unfortunately, this can't be a constant because
+        -- of the dynamic allocation that is required to have variable length string fields)
+        --
         variable cmds : cmd_compare.assoc_array(0 to 5) :=
                             ((new string'("REFRESH"), C_REFRESH),
                              (new string'("AWAIT"), C_AWAIT),
@@ -122,11 +130,12 @@ architecture sim of ddr3_cmd_sequencer_tb is
                              (new string'("READ"), C_READ),
                              (new string'("WRITE"), C_WRITE),
                              (new string'("DELAY"), C_DELAY));
-        variable cmd_str    : string(1 to 20);
+        variable cmd_str    : string(1 to 20);  -- string length must be at least length of longest cmd string
         variable cmd        : cmd_type;
         variable len        : natural;
     begin
         string_read(ln_in, cmd_str, len);
+
         cmd_compare.lookup(cmds, cmd_str(1 to len), cmd);
         
         assert false report "command=" & cmd_type'image(cmd) severity note;
