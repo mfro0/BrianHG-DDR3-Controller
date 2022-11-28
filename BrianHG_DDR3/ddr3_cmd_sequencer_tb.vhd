@@ -224,6 +224,12 @@ begin
         end procedure send_rst;
 
     --
+    -- txcmd(dest, msg, ln)
+    --
+    procedure txcmd(dest : natural; msg : string; ln : natural) is
+    begin
+    end procedure txcmd;
+    --
     -- tx_ddr3_cmd(src, dest, ln)
     --
     -- tx the ddr3 command_in
@@ -279,11 +285,17 @@ begin
                 read(ln_in, number);
                 report "number=" & integer'image(number) severity note;
                 in_vector <= std_ulogic_vector(to_unsigned(number, in_vector'length));
+                
+                -- new signal values will only been taken at next clock edge
+                -- so we just wait for it here
+                wait until rising_edge(cmd_clk);
                 assert false report "Read bank " & to_string(in_bank) &
                                         " row " & to_string(in_ras) &
                                         " cas " & to_string(in_cas) &
                                         " to vector "  & to_string(in_vector)
-                                        severity note;     
+                                        severity note;
+                in_wena <= '0';
+                txcmd(dest, msg, ln);     
             when C_WRITE =>
             when C_DELAY =>
             when others =>
