@@ -126,7 +126,7 @@ architecture sim of ddr3_cmd_sequencer_tb is
     signal in_rd_vector             : std_ulogic_vector(PORT_VECTOR_SIZE - 1 downto 0);
     signal i_cmd_ack                : std_ulogic;
 
-    signal rst_in                   : std_ulogic;
+    signal rst_in                   : std_ulogic := '1';
     signal cmd_clk                  : std_ulogic := '1';
     signal in_ena, in_wena          : std_ulogic;
     signal in_bank                  : std_ulogic_vector(DDR3_WIDTH_BANK - 1 downto 0);
@@ -210,11 +210,12 @@ begin
 
     -- initial begin
     initial_begin : process
-    procedure send_rst is
+        procedure send_rst is
         begin
             assert false report "send_rst:" severity note;
             wait until falling_edge(cmd_clk);
             rst_in <= '1';
+            -- keep in reset for four clock cycles
             wait until falling_edge(cmd_clk);
             wait until falling_edge(cmd_clk);
             wait until falling_edge(cmd_clk);
@@ -223,113 +224,116 @@ begin
             wait until falling_edge(cmd_clk);
         end procedure send_rst;
 
-    --
-    -- wait_rdy
-    -- wait for dut_geoff input buffer ready
-    --
-    procedure wait_rdy is
-    begin
-        if not auto_wait then
-            wait until falling_edge(cmd_clk);       -- wait for busy to clear
-        else
-            while in_busy loop
-                wait until falling_edge(cmd_clk);
-            end loop;
-        end if;
-    end procedure wait_rdy;
+        --
+        -- wait_rdy
+        -- wait for dut_geoff input buffer ready
+        --
+        procedure wait_rdy is
+        begin
+            if not auto_wait then
+                wait until falling_edge(cmd_clk);       -- wait for busy to clear
+            else
+                while in_busy loop
+                    wait until falling_edge(cmd_clk);
+                end loop;
+            end if;
+        end procedure wait_rdy;
 
-    --
-    -- txcmd(dest, msg, ln)
-    --
-    procedure txcmd is
-    begin
-        if auto_wait then
-            wait_rdy;
-        end if;
-        in_ena <= '1';
-        wait until falling_edge(cmd_clk);
-        in_ena <= '0';
-    end procedure txcmd;
-    --
-    -- tx_ddr3_cmd(src, dest, ln)
-    --
-    -- tx the ddr3 command_in
-    --
-    procedure tx_ddr3_cmd(variable ln_in : inout line; line_number : natural) is
-        type cmd_type is (C_REFRESH, C_AWAIT, C_OUTENA, C_READ, C_WRITE, C_DELAY);
+        --
+        -- txcmd(dest, msg, ln)
+        --
+        procedure txcmd is
+        begin
+            if auto_wait then
+                wait_rdy;
+            end if;
+            in_ena <= '1';
+            wait until falling_edge(cmd_clk);
+            in_ena <= '0';
+        end procedure txcmd;
+        
+        --
+        -- tx_ddr3_cmd(src, dest, ln)
+        --
+        -- tx the ddr3 command_in
+        --
+        procedure tx_ddr3_cmd(variable ln_in : inout line; line_number : natural) is
+            type cmd_type is (C_REFRESH, C_AWAIT, C_OUTENA, C_READ, C_WRITE, C_DELAY);
  
-        --
-        -- instantiate generic package with our specific enum type
-        --
-        package cmd_compare is new work.generic_compare generic map (enum => cmd_type);
+            --
+            -- instantiate generic package with our specific enum type
+            --
+            package cmd_compare is new work.generic_compare generic map (enum => cmd_type);
         
-        --
-        -- provide the assoc list (unfortunately, this can't be a constant because
-        -- of the dynamic allocation that is required to have variable length string fields)
-        --
-        variable cmds : cmd_compare.assoc_array(0 to 5) :=
-                            (cmd_compare.assoc'(new string'("REFRESH"), C_REFRESH),
-                            cmd_compare.assoc'(new string'("AWAIT"), C_AWAIT),
-                            cmd_compare.assoc'(new string'("OUTENA"), C_OUTENA),
-                            cmd_compare.assoc'(new string'("READ"), C_READ),
-                            cmd_compare.assoc'(new string'("WRITE"), C_WRITE),
-                            cmd_compare.assoc'(new string'("DELAY"), C_DELAY));
-        variable cmd_str    : string(1 to 20);  -- string length must be at least length of longest cmd string
-        variable cmd        : cmd_type;
-        variable len        : natural;
-        variable number     : integer;
-    begin
-        string_read(ln_in, cmd_str, len);
+            --
+            -- provide the assoc list (unfortunately, this can't be a constant because
+            -- of the dynamic allocation that is required to have variable length string fields)
+            --
+            variable cmds : cmd_compare.assoc_array(0 to 5) :=
+                                (cmd_compare.assoc'(new string'("REFRESH"), C_REFRESH),
+                                cmd_compare.assoc'(new string'("AWAIT"), C_AWAIT),
+                                cmd_compare.assoc'(new string'("OUTENA"), C_OUTENA),
+                                cmd_compare.assoc'(new string'("READ"), C_READ),
+                                cmd_compare.assoc'(new string'("WRITE"), C_WRITE),
+                                cmd_compare.assoc'(new string'("DELAY"), C_DELAY));
+            variable cmd_str    : string(1 to 20);  -- string length must be at least length of longest cmd string
+            variable cmd        : cmd_type;
+            variable len        : natural;
+            variable number     : integer;
+        begin
+            string_read(ln_in, cmd_str, len);
 
-        cmd_compare.lookup(cmds, cmd_str(1 to len), cmd);
+            cmd_compare.lookup(cmds, cmd_str(1 to len), cmd);
         
-        assert false report "command=" & cmd_type'image(cmd) severity note;
+            assert false report "command=" & cmd_type'image(cmd) severity note;
 
-        case cmd is
-            when C_REFRESH =>
-                ref_req <= not ref_req;
+            case cmd is
+                when C_REFRESH =>
+                    ref_req <= not ref_req;
             
-            when C_AWAIT =>
+                when C_AWAIT =>
             
-            when C_OUTENA =>
+                when C_OUTENA =>
 
-            when C_READ =>
-                read(ln_in, number);
-                in_bank <= std_ulogic_vector(to_unsigned(number, in_bank'length));
-                read(ln_in, number);
-                in_ras <= std_ulogic_vector(to_unsigned(number, in_ras'length));
-                read(ln_in, number);
-                in_cas <= std_ulogic_vector(to_unsigned(number, in_cas'length));
-                in_vector <= std_ulogic_vector(to_unsigned(number, in_vector'length));
+                when C_READ =>
+                    read(ln_in, number);
+                    in_bank <= std_ulogic_vector(to_unsigned(number, in_bank'length));
+                    read(ln_in, number);
+                    in_ras <= std_ulogic_vector(to_unsigned(number, in_ras'length));
+                    read(ln_in, number);
+                    in_cas <= std_ulogic_vector(to_unsigned(number, in_cas'length));
+                    in_vector <= std_ulogic_vector(to_unsigned(number, in_vector'length));
                 
-                -- new signal values will only been taken at next clock edge
-                -- so we just wait for it here
-                wait until rising_edge(cmd_clk);
-                assert false report "Read bank " & natural'image(to_integer(unsigned(in_bank))) &
+                    -- new signal values will only been taken at next clock edge
+                    -- so we just wait for it here
+                    wait until rising_edge(cmd_clk);
+                    assert false report "Read bank " & natural'image(to_integer(unsigned(in_bank))) &
                                         " row " & natural'image(to_integer(unsigned(in_ras))) &
                                         " cas " & natural'image(to_integer(unsigned(in_cas))) &
                                         " to vector "  & to_string(in_vector)
                                         severity note;
-                in_wena <= '0';
-                txcmd;     
-            when C_WRITE =>
-            when C_DELAY =>
-            when others =>
-        end case;
-    end procedure tx_ddr3_cmd;
-    --
-    -- execute_ascii_file(<source ascii file name>)
-    --
-    -- Opens the ASCII file and scans for the '@' symbol.
-    -- After each '@' symbol, a string is read as a command function.
-    -- Each function then goes through a 'case command_in' which then executes
-    -- the appropriate functions
-    --
-    procedure execute_ascii_file(source_file_name : string) is
-        type cmd_type is (C_RESET, C_WAIT_IN_READY, C_LOG_FILE, C_END_LOG_FILE,
-                              C_CMD, C_STOP, C_END, C_NO_COMMAND);
-        package cmd_compare is new work.generic_compare generic map (enum => cmd_type);                      
-        variable commands           : cmd_compare.assoc_array(0 to 6) :=
+                    in_wena <= '0';
+                    txcmd;     
+            
+                when C_WRITE =>
+                when C_DELAY =>
+                when others =>
+            end case;
+        end procedure tx_ddr3_cmd;
+        
+        --
+        -- execute_ascii_file(<source ascii file name>)
+        --
+        -- Opens the ASCII file and scans for the '@' symbol.
+        -- After each '@' symbol, a string is read as a command function.
+        -- Each function then goes through a 'case command_in' which then executes
+        -- the appropriate functions
+        --
+        procedure execute_ascii_file(source_file_name : string) is
+            type cmd_type is (C_RESET, C_WAIT_IN_READY, C_LOG_FILE, C_END_LOG_FILE,
+                                C_CMD, C_STOP, C_END, C_NO_COMMAND);
+            package cmd_compare is new work.generic_compare generic map (enum => cmd_type);                      
+            variable commands           : cmd_compare.assoc_array(0 to 6) :=
                                       (cmd_compare.assoc'(new string'("RESET"), C_RESET),
                                        cmd_compare.assoc'(new string'("WAIT_IN_READY"), C_WAIT_IN_READY),
                                        cmd_compare.assoc'(new string'("LOG_FILE"), C_LOG_FILE),
@@ -338,63 +342,64 @@ begin
                                        cmd_compare.assoc'(new string'("STOP"), C_STOP),
                                        cmd_compare.assoc'(new string'("END"), C_END));
 
-        variable line_number        : natural;
-        file fin,
-             fout                   : text;
-        variable in_ln              : line;
-        variable s                  : string(1 to 13);
-        variable c                  : cmd_type;
-        variable cmd                : string(1 to 20);
-        variable cmd_len            : natural;
-    begin
-        line_number := 1;
-        file_open(fin, source_file_name, read_mode);
-        -- fout := output;
+            variable line_number        : natural;
+            file fin,
+                 fout                   : text;
+            variable in_ln              : line;
+            variable s                  : string(1 to 13);
+            variable c                  : cmd_type;
+            variable cmd                : string(1 to 20);
+            variable cmd_len            : natural;
+        begin
+            line_number := 1;
+            file_open(fin, source_file_name, read_mode);
+            -- fout := output;
 
-        assert false report source_file_name & string'(" opened") severity note;
-        while not endfile(fin) loop
-            readline(fin, in_ln);
-            -- assert false report "in_ln=" & in_ln.all severity note;
+            assert false report source_file_name & string'(" opened") severity note;
+            while not endfile(fin) loop
+                readline(fin, in_ln);
+                -- assert false report "in_ln=" & in_ln.all severity note;
            
-            if in_ln /= null then
-                string_read(in_ln, cmd, cmd_len);
+                if in_ln /= null then
+                    string_read(in_ln, cmd, cmd_len);
                 
-                -- assert false report "cmd=" & cmd & "cmd_len=" & integer'image(cmd_len) severity note;
-                if cmd(1) = '@' then
-                    cmd_compare.lookup(commands, cmd(2 to cmd_len), c);
-                    assert false report "execute_ascii_file: cmd=" & cmd_type'image(c) severity note;
+                    -- assert false report "cmd=" & cmd & "cmd_len=" & integer'image(cmd_len) severity note;
+                    if cmd(1) = '@' then
+                        cmd_compare.lookup(commands, cmd(2 to cmd_len), c);
+                        assert false report "execute_ascii_file: cmd=" & cmd_type'image(c) severity note;
                 
-                    case c is
-                        when C_CMD =>
-                            assert false report "CMD requested" severity note;
-                            tx_ddr3_cmd(in_ln, line_number);
-                        when C_RESET =>
-                            script_line <= line_number;
-                            -- script_cmd <= cmd;
-                            send_rst;
-                            assert false report "RESET requested" severity note;
-                        when C_WAIT_IN_READY =>
-                            assert false report "WAIT_IN_READY requested" severity note;
-                        when C_LOG_FILE =>
-                            assert false report "LOG_FILE requested" severity note;
-                        when C_END_LOG_FILE =>
-                            assert false report "END_LOG_FILE requested" severity note;
-                        when C_STOP =>
-                            assert false report "simulation STOP requested" severity note;
-                        when C_END =>
-                            assert false report "simulation END reqested" severity note;
-                            assert false report "normal exit." severity note;
-                            std.env.stop(0);
-                        when others => 
-                            null;
-                    end case;
+                        case c is
+                            when C_CMD =>
+                                assert false report "CMD requested" severity note;
+                                tx_ddr3_cmd(in_ln, line_number);
+                            when C_RESET =>
+                                script_line <= line_number;
+                                -- script_cmd <= cmd;
+                                send_rst;
+                                assert false report "RESET requested" severity note;
+                            when C_WAIT_IN_READY =>
+                                assert false report "WAIT_IN_READY requested" severity note;
+                            when C_LOG_FILE =>
+                                assert false report "LOG_FILE requested" severity note;
+                            when C_END_LOG_FILE =>
+                                assert false report "END_LOG_FILE requested" severity note;
+                            when C_STOP =>
+                                assert false report "simulation STOP requested" severity note;
+                            when C_END =>
+                                assert false report "simulation END reqested" severity note;
+                                assert false report "normal exit." severity note;
+                                std.env.stop(0);
+                            when others => 
+                                null;
+                        end case;
+                    end if;
                 end if;
-            end if;
-            line_number := line_number + 1;
-        end loop;   
-        std.env.stop(0);        
-    end procedure execute_ascii_file;
-    begin
+                line_number := line_number + 1;
+            end loop;   
+            std.env.stop(0);        
+        end procedure execute_ascii_file;
+
+    begin   -- process initial_begin
         wdt_counter <= WDT_RESET_TIME;
         in_ena <= '0';
         in_wena <= '0';
@@ -409,13 +414,11 @@ begin
         ref_req <= '0';
 
         rst_in <= '1';
-        rst_in <= '0' after 50 ns;
+        wait for 50 ns;
+        rst_in <= '0';
 
-        loop
-            wait until rising_edge(cmd_clk);
-            assert false report "call execute_ascii_file" severity note;
-            execute_ascii_file(TB_COMMAND_SCRIPT_FILE);
-        end loop;
+        assert false report "call execute_ascii_file" severity note;
+        execute_ascii_file(TB_COMMAND_SCRIPT_FILE);
         wait;
     end process initial_begin;    
 end architecture sim;
