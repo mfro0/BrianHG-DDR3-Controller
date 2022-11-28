@@ -361,12 +361,13 @@ begin
                 -- assert false report "in_ln=" & in_ln.all severity note;
            
                 if in_ln /= null then
+                    cmd := (others => ' ');
                     string_read(in_ln, cmd, cmd_len);
                 
                     -- assert false report "cmd=" & cmd & "cmd_len=" & integer'image(cmd_len) severity note;
                     if cmd(1) = '@' then
                         cmd_compare.lookup(commands, cmd(2 to cmd_len), c);
-                        assert false report "execute_ascii_file: cmd=" & cmd_type'image(c) severity note;
+                        assert false report "execute_ascii_file: cmd=" & cmd_type'image(c) & " (" & cmd & ")" severity note;
                 
                         case c is
                             when C_CMD =>
@@ -390,7 +391,7 @@ begin
                                 assert false report "normal exit." severity note;
                                 std.env.stop(0);
                             when others => 
-                                null;
+                                assert false report "illegal command " & cmd severity error;
                         end case;
                     end if;
                 end if;
