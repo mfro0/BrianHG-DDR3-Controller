@@ -10,6 +10,9 @@ sim: $(SV_SRCS) $(SRCS)
 	vlog -sv -work work $(SV_SRCS)
 	vcom -work work $(VCOM_OPTS) $(VHDL_SRCS)
 run:
+	make sim
 	vsim -c ddr3_cmd_sequencer_tb -do ddr3_cmd_sequencer_sim.do
-
+vrun:
+	make sim
+	vsim ddr3_cmd_sequencer_tb -do ddr3_cmd_sequencer_sim.do
 
