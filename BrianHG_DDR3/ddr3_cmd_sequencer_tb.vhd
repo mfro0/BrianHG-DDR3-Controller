@@ -224,10 +224,31 @@ begin
         end procedure send_rst;
 
     --
+    -- wait_rdy
+    -- wait for dut_geoff input buffer ready
+    --
+    procedure wait_rdy is
+    begin
+        if not auto_wait then
+            wait until falling_edge(cmd_clk);       -- wait for busy to clear
+        else
+            while in_busy loop
+                wait until falling_edge(cmd_clk);
+            end loop;
+        end if;
+    end procedure wait_rdy;
+
+    --
     -- txcmd(dest, msg, ln)
     --
-    procedure txcmd(dest : natural; msg : string; ln : natural) is
+    procedure txcmd is
     begin
+        if auto_wait then
+            wait_rdy;
+        end if;
+        in_ena <= '1';
+        wait until falling_edge(cmd_clk);
+        in_ena <= '0';
     end procedure txcmd;
     --
     -- tx_ddr3_cmd(src, dest, ln)
@@ -247,12 +268,12 @@ begin
         -- of the dynamic allocation that is required to have variable length string fields)
         --
         variable cmds : cmd_compare.assoc_array(0 to 5) :=
-                            ((new string'("REFRESH"), C_REFRESH),
-                             (new string'("AWAIT"), C_AWAIT),
-                             (new string'("OUTENA"), C_OUTENA),
-                             (new string'("READ"), C_READ),
-                             (new string'("WRITE"), C_WRITE),
-                             (new string'("DELAY"), C_DELAY));
+                            (cmd_compare.assoc'(new string'("REFRESH"), C_REFRESH),
+                            cmd_compare.assoc'(new string'("AWAIT"), C_AWAIT),
+                            cmd_compare.assoc'(new string'("OUTENA"), C_OUTENA),
+                            cmd_compare.assoc'(new string'("READ"), C_READ),
+                            cmd_compare.assoc'(new string'("WRITE"), C_WRITE),
+                            cmd_compare.assoc'(new string'("DELAY"), C_DELAY));
         variable cmd_str    : string(1 to 20);  -- string length must be at least length of longest cmd string
         variable cmd        : cmd_type;
         variable len        : natural;
@@ -274,28 +295,23 @@ begin
 
             when C_READ =>
                 read(ln_in, number);
-                report "number=" & integer'image(number) severity note;
                 in_bank <= std_ulogic_vector(to_unsigned(number, in_bank'length));
                 read(ln_in, number);
-                report "number=" & integer'image(number) severity note;
                 in_ras <= std_ulogic_vector(to_unsigned(number, in_ras'length));
                 read(ln_in, number);
-                report "number=" & integer'image(number) severity note;
                 in_cas <= std_ulogic_vector(to_unsigned(number, in_cas'length));
-                read(ln_in, number);
-                report "number=" & integer'image(number) severity note;
                 in_vector <= std_ulogic_vector(to_unsigned(number, in_vector'length));
                 
                 -- new signal values will only been taken at next clock edge
                 -- so we just wait for it here
                 wait until rising_edge(cmd_clk);
-                assert false report "Read bank " & to_string(in_bank) &
-                                        " row " & to_string(in_ras) &
-                                        " cas " & to_string(in_cas) &
+                assert false report "Read bank " & natural'image(to_integer(unsigned(in_bank))) &
+                                        " row " & natural'image(to_integer(unsigned(in_ras))) &
+                                        " cas " & natural'image(to_integer(unsigned(in_cas))) &
                                         " to vector "  & to_string(in_vector)
                                         severity note;
                 in_wena <= '0';
-                txcmd(dest, msg, ln);     
+                txcmd;     
             when C_WRITE =>
             when C_DELAY =>
             when others =>
@@ -314,31 +330,25 @@ begin
                               C_CMD, C_STOP, C_END, C_NO_COMMAND);
         package cmd_compare is new work.generic_compare generic map (enum => cmd_type);                      
         variable commands           : cmd_compare.assoc_array(0 to 6) :=
-                                      ((new string'("RESET"), C_RESET),
-                                       (new string'("WAIT_IN_READY"), C_WAIT_IN_READY),
-                                       (new string'("LOG_FILE"), C_LOG_FILE),
-                                       (new string'("END_LOG_FILE"), C_END_LOG_FILE),
-                                       (new string'("CMD"), C_CMD),
-                                       (new string'("STOP"), C_STOP),
-                                       (new string'("END"), C_END));
+                                      (cmd_compare.assoc'(new string'("RESET"), C_RESET),
+                                       cmd_compare.assoc'(new string'("WAIT_IN_READY"), C_WAIT_IN_READY),
+                                       cmd_compare.assoc'(new string'("LOG_FILE"), C_LOG_FILE),
+                                       cmd_compare.assoc'(new string'("END_LOG_FILE"), C_END_LOG_FILE),
+                                       cmd_compare.assoc'(new string'("CMD"), C_CMD),
+                                       cmd_compare.assoc'(new string'("STOP"), C_STOP),
+                                       cmd_compare.assoc'(new string'("END"), C_END));
 
-        variable fin_running,
-                 r                  : integer;
-        variable message_string,
-                 destination_file_name,
-                 bmp_file_name      : line;
-        variable draw_color         : natural range 0 to 255;
         variable line_number        : natural;
-        file fin                    : text open READ_MODE is source_file_name;
+        file fin,
+             fout                   : text;
         variable in_ln              : line;
-        variable out_ln             : line;
-        file fout                   : text;
         variable s                  : string(1 to 13);
         variable c                  : cmd_type;
         variable cmd                : string(1 to 20);
         variable cmd_len            : natural;
     begin
         line_number := 1;
+        file_open(fin, source_file_name, read_mode);
         -- fout := output;
 
         assert false report source_file_name & string'(" opened") severity note;
@@ -399,10 +409,9 @@ begin
         ref_req <= '0';
 
         rst_in <= '1';
-        wait for 50 ns;
-        rst_in <= '0';
+        rst_in <= '0' after 50 ns;
 
-        while (true) loop
+        loop
             wait until rising_edge(cmd_clk);
             assert false report "call execute_ascii_file" severity note;
             execute_ascii_file(TB_COMMAND_SCRIPT_FILE);
