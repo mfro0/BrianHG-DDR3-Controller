@@ -56,12 +56,16 @@ package body mf_utils is
             variable num    : integer;
             variable c      : character;
         begin
-            if ln.all'length > 0 and is_hex(ln.all(1)) then               -- there is still another hex character to be read
+            -- peek into the line buffer to see if there is another hex character
+            if ln.all'length > 0 and is_hex(ln.all(1)) then                 -- there is still another hex character to be read
                 read(ln, c);
-                num := hval(c);
+                num := hval(c);                                             -- convert it into a number
                 -- assert false report "read a " & c & " character, value is " & integer'image(num) & " depth is " & integer'image(depth) severity note;
+                -- recursively call ourselves until no more characters to read, then on ascent,
+                -- add up what we found
                 return recursive_hread(depth + 1) + num * 16 ** (maxdepth - depth);
             else
+                -- walk on, nothing to see here
                 maxdepth := depth - 1;
                 return 0;
             end if;
@@ -409,10 +413,10 @@ begin
                     -- new signal values will only been taken at next clock edge
                     -- so we just wait for it here
                     wait until rising_edge(cmd_clk);
-                    assert false report "Read bank " & to_hstring(in_bank) &
-                                        " row " & to_hstring(in_ras) &
-                                        " cas " & to_hstring(in_cas) &
-                                        " to vector "  & to_hstring(in_vector)
+                    assert false report "read bank: " & to_hstring(in_bank) &
+                                        " ras: " & to_hstring(in_ras) &
+                                        " cas: " & to_hstring(in_cas) &
+                                        " to vector: "  & to_hstring(in_vector)
                                         severity note;
                     in_wena <= '0';
                     txcmd;     
