@@ -252,13 +252,24 @@ begin
             in_ena <= '0';
         end procedure txcmd;
 
+        --
+        -- implement hread() (hexadecimal read for integers)
+        -- that is missing from the std.textio package.
+        --
+        -- Works for upper and lower case hex digits.
+        -- Skips leading whitespace, stops reading when it detects an
+        -- invalid hex character.
+        --
         procedure hread(variable ln : inout line; num : out integer) is
             constant hvals      : string := "0123456789ABCDEF0123456789abcdef";
             variable c          : character;
-            variable cval       : integer;
-            variable pos        : integer;
             variable maxdepth   : natural;
 
+            --
+            -- translate a single hex character ('0'-'f', '0'-'F')
+            -- into its integer equivalent. Return -1 if character isn't
+            -- identified as valid hex digit.
+            --
             function hval(c : character) return integer is
             begin
                 for i in hvals'range loop
@@ -269,19 +280,28 @@ begin
                 return -1;
             end;
 
+            --
+            -- check if character is a hex digit.
+            --
             function is_hex(c : character) return boolean is
             begin
                 return hval(c) /= -1;
             end function is_hex;
 
+            --
+            -- the recursive part of hread. Collects single digit's numerical
+            -- values in string until it hits a non-hex character. 
+            -- Then, on ascent of the recursive call, add up all the collected
+            -- digits multiplied by their digit position's valence.
+            --
             impure function recursive_hread(depth : natural) return integer is
                 variable num    : integer;
                 variable c      : character;
             begin
-                if is_hex(ln.all(1)) then               -- there is still another hex character to be read
+                if ln.all'length > 0 and is_hex(ln.all(1)) then               -- there is still another hex character to be read
                     read(ln, c);
                     num := hval(c);
-                    assert false report "read a " & c & " character, value is " & integer'image(num) & " depth is " & integer'image(depth) severity note;
+                    -- assert false report "read a " & c & " character, value is " & integer'image(num) & " depth is " & integer'image(depth) severity note;
                     return recursive_hread(depth + 1) + num * 16 ** (maxdepth - depth);
                 else
                     maxdepth := depth - 1;
@@ -291,15 +311,18 @@ begin
 
         begin
             -- skip leading white space
-            for i in ln.all'range loop
-                if ln.all(1) = ' ' or ln.all(i) = HT then
-                    read(ln, c);
-                else
-                    exit;
-                end if;
-            end loop;
-            num := recursive_hread(1);
-            assert false report "hread: " & ln.all & " maxdepth was " & integer'image(maxdepth) severity note;
+            if ln.all'length > 0 then
+                for i in ln.all'range loop
+                    if ln.all(1) = ' ' or ln.all(1) = HT then
+                        read(ln, c);
+                    else
+                        exit;
+                    end if;
+                end loop;
+                -- call recursive part
+                num := recursive_hread(1);
+                -- assert false report "hread: " & ln.all & " maxdepth was " & integer'image(maxdepth) severity note;
+            end if;
         end hread;
         
         --
@@ -381,19 +404,19 @@ begin
                     txcmd;     
             
                 when C_WRITE =>
-                    read(ln_in, number);
+                    hread(ln_in, number);
                     in_bank <= std_ulogic_vector(to_unsigned(number, in_bank'length));
 
                     hread(ln_in, number);
                     in_ras <= std_ulogic_vector(to_unsigned(number, in_ras'length));
                     
-                    read(ln_in, number);
+                    hread(ln_in, number);
                     in_cas <= std_ulogic_vector(to_unsigned(number, in_cas'length));
                     
-                    read(ln_in, number);
+                    hread(ln_in, number);
                     in_wmask <= std_ulogic_vector(to_unsigned(number, in_wmask'length));
                     
-                    read(ln_in, number);
+                    hread(ln_in, number);
                     in_wdata <= std_ulogic_vector(to_unsigned(number, in_wdata'length));
 
                     wait until rising_edge(cmd_clk);    -- see above
@@ -452,12 +475,6 @@ begin
 
             variable num                : integer;
         begin
-            -- testing/temporary
-            in_ln := new string'("fffe ");
-            hread(in_ln, num);
-            assert false report in_ln.all & " = " & integer'image(num) severity note;
-            std.env.stop(0);
-
             line_number := 1;
             file_open(fin, source_file_name, read_mode);
             -- fout := output;
