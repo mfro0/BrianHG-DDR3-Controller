@@ -196,6 +196,10 @@ architecture sim of ddr3_cmd_sequencer_tb is
         );
     end component BrianHG_DDR3_CMD_SEQUENCER;
 
+    --
+    -- define a protected counter type to implement the watchdog as a shared variable
+    -- This allows us to drive the same variable from different processes safely.
+    --
     type wdt_counter_type is protected
         procedure reset;
         procedure decrement;
@@ -521,8 +525,6 @@ begin -- architecture
             variable c                  : cmd_type;
             variable cmd                : string(1 to 20);
             variable cmd_len            : natural;
-
-            variable num                : integer;
         begin
             line_number := 1;
             file_open(fin, source_file_name, read_mode);
