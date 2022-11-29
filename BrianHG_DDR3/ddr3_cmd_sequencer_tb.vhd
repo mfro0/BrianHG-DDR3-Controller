@@ -405,14 +405,6 @@ begin -- architecture
             variable len        : natural;
             variable number     : integer;
             variable sl         : bit;
-            variable sluv       : std_ulogic_vector(3 downto 0);
-            variable sluvl      : std_ulogic_vector(14 downto 0);
-            variable vin_bank   : std_ulogic_vector(in_bank'range);
-            variable vin_ras    : std_ulogic_vector(in_ras'range);
-            variable vin_cas    : std_ulogic_vector(in_cas'range);
-            variable vin_wmask  : std_ulogic_vector(in_wmask'range);
-            variable vin_wdata  : std_ulogic_vector(in_wdata'range);
-            variable b          : boolean;
         begin
             string_read(ln_in, cmd_str, len);
 
@@ -526,7 +518,6 @@ begin -- architecture
             file fin,
                  fout                   : text;
             variable in_ln              : line;
-            variable s                  : string(1 to 13);
             variable c                  : cmd_type;
             variable cmd                : string(1 to 20);
             variable cmd_len            : natural;
