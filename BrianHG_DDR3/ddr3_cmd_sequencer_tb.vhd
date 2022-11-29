@@ -290,9 +290,11 @@ begin
 
             --
             -- the recursive part of hread. Collects single digit's numerical
-            -- values in string until it hits a non-hex character. 
-            -- Then, on ascent of the recursive call, add up all the collected
+            -- values in string in a recursive descend until it hits a non-hex character. 
+            -- Then, on ascent of the recursive call, adds up all the collected
             -- digits multiplied by their digit position's valence.
+            --
+            -- TODO: no active check for overflow
             --
             impure function recursive_hread(depth : natural) return integer is
                 variable num    : integer;
@@ -309,7 +311,7 @@ begin
                 end if;
             end function recursive_hread;
 
-        begin
+        begin   -- hread
             -- skip leading white space
             if ln.all'length > 0 then
                 for i in ln.all'range loop
@@ -361,7 +363,7 @@ begin
             variable vin_cas    : std_ulogic_vector(in_cas'range);
             variable vin_wmask  : std_ulogic_vector(in_wmask'range);
             variable vin_wdata  : std_ulogic_vector(in_wdata'range);
-            variable good       : boolean;
+            variable b          : boolean;
         begin
             string_read(ln_in, cmd_str, len);
 
@@ -374,7 +376,7 @@ begin
                     ref_req <= not ref_req;
             
                 when C_AWAIT =>
-                    read(ln_in, number);
+                    hread(ln_in, number);
                     -- convert integer (0, 1) to boolean
                     auto_wait <= boolean'val(number);
 
@@ -383,13 +385,13 @@ begin
                     cmd_ack <= to_stdulogic(sl);
 
                 when C_READ =>
-                    read(ln_in, number);
+                    hread(ln_in, number);
                     in_bank <= std_ulogic_vector(to_unsigned(number, in_bank'length));
-                    read(ln_in, number);
+                    hread(ln_in, number);
                     in_ras <= std_ulogic_vector(to_unsigned(number, in_ras'length));
-                    read(ln_in, number);
+                    hread(ln_in, number);
                     in_cas <= std_ulogic_vector(to_unsigned(number, in_cas'length));
-                    read(ln_in, number);
+                    hread(ln_in, number);
                     in_vector <= std_ulogic_vector(to_unsigned(number, in_vector'length));
                 
                     -- new signal values will only been taken at next clock edge
