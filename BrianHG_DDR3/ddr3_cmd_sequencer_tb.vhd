@@ -1,3 +1,88 @@
+library ieee;
+use ieee.numeric_std.all;
+use ieee.std_logic_1164.all;
+use std.textio.all;
+
+package mf_utils is
+    procedure hread(variable ln : inout line; num : out integer);
+end package mf_utils;
+
+package body mf_utils is
+    --
+    -- implement hread() (hexadecimal read for integers)
+    -- that is missing from the std.textio package.
+    --
+    -- Works for upper and lower case hex digits.
+    -- Skips leading whitespace, stops reading when it detects an
+    -- invalid hex character.
+    --
+    procedure hread(variable ln : inout line; num : out integer) is
+        constant hvals      : string := "0123456789ABCDEF0123456789abcdef";
+        variable c          : character;
+        variable maxdepth   : natural;
+
+        --
+        -- translate a single hex character ('0'-'f', '0'-'F')
+        -- into its integer equivalent. Return -1 if character isn't
+        -- identified as valid hex digit.
+        --
+        function hval(c : character) return integer is
+        begin
+            for i in hvals'range loop
+                if hvals(i) = c then
+                    return (i - 1) mod 16;
+                end if;
+            end loop;
+            return -1;
+        end;
+
+        --
+        -- check if character is a hex digit.
+        --
+        function is_hex(c : character) return boolean is
+        begin
+            return hval(c) /= -1;
+        end function is_hex;
+
+        --
+        -- the recursive part of hread. Collects single digit's numerical
+        -- values in string in a recursive descend until it hits a non-hex character. 
+        -- Then, on ascent of the recursive call, adds up all the collected
+        -- digits multiplied by their digit position's valence.
+        --
+        -- TODO: no active check for overflow
+        --
+        impure function recursive_hread(depth : natural) return integer is
+            variable num    : integer;
+            variable c      : character;
+        begin
+            if ln.all'length > 0 and is_hex(ln.all(1)) then               -- there is still another hex character to be read
+                read(ln, c);
+                num := hval(c);
+                -- assert false report "read a " & c & " character, value is " & integer'image(num) & " depth is " & integer'image(depth) severity note;
+                return recursive_hread(depth + 1) + num * 16 ** (maxdepth - depth);
+            else
+                maxdepth := depth - 1;
+                return 0;
+            end if;
+        end function recursive_hread;
+
+    begin   -- hread
+        -- skip leading white space
+        if ln.all'length > 0 then
+            for i in ln.all'range loop
+                if ln.all(1) = ' ' or ln.all(1) = HT then
+                    read(ln, c);
+                else
+                    exit;
+                end if;
+            end loop;
+            -- call recursive part
+            num := recursive_hread(1);
+            -- assert false report "hread: " & ln.all & " maxdepth was " & integer'image(maxdepth) severity note;
+        end if;
+    end hread;
+end package body mf_utils;
 --
 -- generic package to provide universal keyword lookup
 --
@@ -38,6 +123,7 @@ library ieee;
 use ieee.numeric_std.all;
 use ieee.std_logic_1164.all;
 use std.textio.all;
+use work.mf_utils.all;
 
 entity ddr3_cmd_sequencer_tb is
     generic
@@ -252,80 +338,6 @@ begin
             in_ena <= '0';
         end procedure txcmd;
 
-        --
-        -- implement hread() (hexadecimal read for integers)
-        -- that is missing from the std.textio package.
-        --
-        -- Works for upper and lower case hex digits.
-        -- Skips leading whitespace, stops reading when it detects an
-        -- invalid hex character.
-        --
-        procedure hread(variable ln : inout line; num : out integer) is
-            constant hvals      : string := "0123456789ABCDEF0123456789abcdef";
-            variable c          : character;
-            variable maxdepth   : natural;
-
-            --
-            -- translate a single hex character ('0'-'f', '0'-'F')
-            -- into its integer equivalent. Return -1 if character isn't
-            -- identified as valid hex digit.
-            --
-            function hval(c : character) return integer is
-            begin
-                for i in hvals'range loop
-                    if hvals(i) = c then
-                        return (i - 1) mod 16;
-                    end if;
-                end loop;
-                return -1;
-            end;
-
-            --
-            -- check if character is a hex digit.
-            --
-            function is_hex(c : character) return boolean is
-            begin
-                return hval(c) /= -1;
-            end function is_hex;
-
-            --
-            -- the recursive part of hread. Collects single digit's numerical
-            -- values in string in a recursive descend until it hits a non-hex character. 
-            -- Then, on ascent of the recursive call, adds up all the collected
-            -- digits multiplied by their digit position's valence.
-            --
-            -- TODO: no active check for overflow
-            --
-            impure function recursive_hread(depth : natural) return integer is
-                variable num    : integer;
-                variable c      : character;
-            begin
-                if ln.all'length > 0 and is_hex(ln.all(1)) then               -- there is still another hex character to be read
-                    read(ln, c);
-                    num := hval(c);
-                    -- assert false report "read a " & c & " character, value is " & integer'image(num) & " depth is " & integer'image(depth) severity note;
-                    return recursive_hread(depth + 1) + num * 16 ** (maxdepth - depth);
-                else
-                    maxdepth := depth - 1;
-                    return 0;
-                end if;
-            end function recursive_hread;
-
-        begin   -- hread
-            -- skip leading white space
-            if ln.all'length > 0 then
-                for i in ln.all'range loop
-                    if ln.all(1) = ' ' or ln.all(1) = HT then
-                        read(ln, c);
-                    else
-                        exit;
-                    end if;
-                end loop;
-                -- call recursive part
-                num := recursive_hread(1);
-                -- assert false report "hread: " & ln.all & " maxdepth was " & integer'image(maxdepth) severity note;
-            end if;
-        end hread;
         
         --
         -- tx_ddr3_cmd(src, dest, ln)
@@ -430,6 +442,13 @@ begin
                     txcmd;
                 
                 when C_DELAY =>
+                    read(ln_in, number);
+                    assert false report "Delaying for " & integer'image(number) &
+                                        " clock cycle(s)" severity note;
+                    for i in 1 to number loop
+                        wait until falling_edge(cmd_clk);
+                        wdt_counter <= WDT_RESET_TIME;
+                    end loop;
 
                 when others =>
                     wait_rdy;
