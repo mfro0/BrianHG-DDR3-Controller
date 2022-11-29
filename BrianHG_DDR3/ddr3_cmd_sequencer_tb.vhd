@@ -251,6 +251,56 @@ begin
             wait until falling_edge(cmd_clk);
             in_ena <= '0';
         end procedure txcmd;
+
+        procedure hread(variable ln : inout line; num : out integer) is
+            constant hvals      : string := "0123456789ABCDEF0123456789abcdef";
+            variable c          : character;
+            variable cval       : integer;
+            variable pos        : integer;
+            variable maxdepth   : natural;
+
+            function hval(c : character) return integer is
+            begin
+                for i in hvals'range loop
+                    if hvals(i) = c then
+                        return (i - 1) mod 16;
+                    end if;
+                end loop;
+                return -1;
+            end;
+
+            function is_hex(c : character) return boolean is
+            begin
+                return hval(c) /= -1;
+            end function is_hex;
+
+            impure function recursive_hread(depth : natural) return integer is
+                variable num    : integer;
+                variable c      : character;
+            begin
+                if is_hex(ln.all(1)) then               -- there is still another hex character to be read
+                    read(ln, c);
+                    num := hval(c);
+                    assert false report "read a " & c & " character, value is " & integer'image(num) & " depth is " & integer'image(depth) severity note;
+                    return recursive_hread(depth + 1) + num * 16 ** (maxdepth - depth);
+                else
+                    maxdepth := depth - 1;
+                    return 0;
+                end if;
+            end function recursive_hread;
+
+        begin
+            -- skip leading white space
+            for i in ln.all'range loop
+                if ln.all(1) = ' ' or ln.all(i) = HT then
+                    read(ln, c);
+                else
+                    exit;
+                end if;
+            end loop;
+            num := recursive_hread(1);
+            assert false report "hread: " & ln.all & " maxdepth was " & integer'image(maxdepth) severity note;
+        end hread;
         
         --
         -- tx_ddr3_cmd(src, dest, ln)
@@ -264,22 +314,31 @@ begin
             -- instantiate generic package with our specific enum type
             --
             package cmd_compare is new work.generic_compare generic map (enum => cmd_type);
-        
+
             --
             -- provide the assoc list (unfortunately, this can't be a constant because
             -- of the dynamic allocation that is required to have variable length string fields)
             --
             variable cmds : cmd_compare.assoc_array(0 to 5) :=
                                 (cmd_compare.assoc'(new string'("REFRESH"), C_REFRESH),
-                                cmd_compare.assoc'(new string'("AWAIT"), C_AWAIT),
-                                cmd_compare.assoc'(new string'("OUTENA"), C_OUTENA),
-                                cmd_compare.assoc'(new string'("READ"), C_READ),
-                                cmd_compare.assoc'(new string'("WRITE"), C_WRITE),
-                                cmd_compare.assoc'(new string'("DELAY"), C_DELAY));
+                                 cmd_compare.assoc'(new string'("AWAIT"), C_AWAIT),
+                                 cmd_compare.assoc'(new string'("OUTENA"), C_OUTENA),
+                                 cmd_compare.assoc'(new string'("READ"), C_READ),
+                                 cmd_compare.assoc'(new string'("WRITE"), C_WRITE),
+                                 cmd_compare.assoc'(new string'("DELAY"), C_DELAY));
             variable cmd_str    : string(1 to 20);  -- string length must be at least length of longest cmd string
             variable cmd        : cmd_type;
             variable len        : natural;
             variable number     : integer;
+            variable sl         : bit;
+            variable sluv       : std_ulogic_vector(3 downto 0);
+            variable sluvl      : std_ulogic_vector(14 downto 0);
+            variable vin_bank   : std_ulogic_vector(in_bank'range);
+            variable vin_ras    : std_ulogic_vector(in_ras'range);
+            variable vin_cas    : std_ulogic_vector(in_cas'range);
+            variable vin_wmask  : std_ulogic_vector(in_wmask'range);
+            variable vin_wdata  : std_ulogic_vector(in_wdata'range);
+            variable good       : boolean;
         begin
             string_read(ln_in, cmd_str, len);
 
@@ -292,8 +351,13 @@ begin
                     ref_req <= not ref_req;
             
                 when C_AWAIT =>
-            
+                    read(ln_in, number);
+                    -- convert integer (0, 1) to boolean
+                    auto_wait <= boolean'val(number);
+
                 when C_OUTENA =>
+                    read(ln_in, sl);
+                    cmd_ack <= to_stdulogic(sl);
 
                 when C_READ =>
                     read(ln_in, number);
@@ -302,22 +366,57 @@ begin
                     in_ras <= std_ulogic_vector(to_unsigned(number, in_ras'length));
                     read(ln_in, number);
                     in_cas <= std_ulogic_vector(to_unsigned(number, in_cas'length));
+                    read(ln_in, number);
                     in_vector <= std_ulogic_vector(to_unsigned(number, in_vector'length));
                 
                     -- new signal values will only been taken at next clock edge
                     -- so we just wait for it here
                     wait until rising_edge(cmd_clk);
-                    assert false report "Read bank " & natural'image(to_integer(unsigned(in_bank))) &
-                                        " row " & natural'image(to_integer(unsigned(in_ras))) &
-                                        " cas " & natural'image(to_integer(unsigned(in_cas))) &
-                                        " to vector "  & to_string(in_vector)
+                    assert false report "Read bank " & to_hstring(in_bank) &
+                                        " row " & to_hstring(in_ras) &
+                                        " cas " & to_hstring(in_cas) &
+                                        " to vector "  & to_hstring(in_vector)
                                         severity note;
                     in_wena <= '0';
                     txcmd;     
             
                 when C_WRITE =>
+                    read(ln_in, number);
+                    in_bank <= std_ulogic_vector(to_unsigned(number, in_bank'length));
+
+                    hread(ln_in, number);
+                    in_ras <= std_ulogic_vector(to_unsigned(number, in_ras'length));
+                    
+                    read(ln_in, number);
+                    in_cas <= std_ulogic_vector(to_unsigned(number, in_cas'length));
+                    
+                    read(ln_in, number);
+                    in_wmask <= std_ulogic_vector(to_unsigned(number, in_wmask'length));
+                    
+                    read(ln_in, number);
+                    in_wdata <= std_ulogic_vector(to_unsigned(number, in_wdata'length));
+
+                    wait until rising_edge(cmd_clk);    -- see above
+                    assert false report "write bank: " & to_hstring(in_bank) &
+                                        " ras: " & to_hstring(in_ras) &
+                                        " cas: " & to_hstring(in_cas) &
+                                        " wmask: " & to_hstring(in_wmask) &
+                                        " wdata: " & to_hstring(in_wdata) severity note;
+                    txcmd;
+                
                 when C_DELAY =>
+
                 when others =>
+                    wait_rdy;
+                    while wdt_counter > SYS_IDLE_TIME loop
+                        wait until falling_edge(cmd_clk);
+                    end loop;
+                    assert false report "unknown command" severity warning;
+                    while wdt_counter >= 2 loop
+                        wait until falling_edge(cmd_clk);
+                    end loop;
+                    wait until falling_edge(cmd_clk);
+                    std.env.stop(0);
             end case;
         end procedure tx_ddr3_cmd;
         
@@ -350,7 +449,15 @@ begin
             variable c                  : cmd_type;
             variable cmd                : string(1 to 20);
             variable cmd_len            : natural;
+
+            variable num                : integer;
         begin
+            -- testing/temporary
+            in_ln := new string'("fffe ");
+            hread(in_ln, num);
+            assert false report in_ln.all & " = " & integer'image(num) severity note;
+            std.env.stop(0);
+
             line_number := 1;
             file_open(fin, source_file_name, read_mode);
             -- fout := output;
