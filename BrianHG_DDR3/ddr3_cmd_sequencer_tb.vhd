@@ -196,10 +196,33 @@ architecture sim of ddr3_cmd_sequencer_tb is
         );
     end component BrianHG_DDR3_CMD_SEQUENCER;
 
+    type wdt_counter_type is protected
+        procedure reset;
+        procedure decrement;
+        impure function get_counter return integer;
+    end protected wdt_counter_type;
+
+    constant WDT_RESET_TIME         : natural := 16;
+    
+    type wdt_counter_type is protected body
+        variable wdt_counter        : natural range 0 to 255 := 0;
+        procedure reset is
+        begin
+            wdt_counter := WDT_RESET_TIME;
+        end procedure reset;
+        procedure decrement is
+        begin
+            wdt_counter := wdt_counter - 1;
+        end procedure decrement;
+        impure function get_counter return natural is
+        begin
+            return wdt_counter;
+        end function get_counter;
+    end protected body wdt_counter_type;
+
     constant DDR3_NUM_CK            : integer := DDR3_NUM_CHIPS;
     constant USE_TOGGLE_ENA         : boolean := false;
     constant USE_TOGGLE_OUT         : boolean := false;
-    constant WDT_RESET_TIME         : natural := 16;
     constant SYS_IDLE_TIME          : natural := WDT_RESET_TIME - 8;
 
     type DDR_CMD_NAME is (MRS, REF, PRE, ACT, WRI, REA, ZQC, NOP,
@@ -238,11 +261,8 @@ architecture sim of ddr3_cmd_sequencer_tb is
     signal ref_req                  : std_ulogic;
     signal ref_ack                  : std_ulogic;
     signal idle                     : std_ulogic;
-    signal wdt_counter              : natural range 0 to 255;
-
-
-
-begin
+begin -- architecture
+    
     b_cmd_sequencer : block
         signal out_txb              : std_ulogic_vector(7 downto 0);
         signal out_read_ready       : std_ulogic;
@@ -298,9 +318,21 @@ begin
 
     cmd_clk <= not cmd_clk after period;
 
+    p_watchdog : process
+        variable wdt_counter : wdt_counter_type;
+    begin
+        wait until rising_edge(cmd_clk);
+        if in_ena or rst_in or not idle then
+            wdt_counter.reset;
+        else
+            wdt_counter.decrement;
+        end if;
+    end process;
+
     -- initial begin
     initial_begin : process
         procedure send_rst is
+            variable wdt_counter : wdt_counter_type;
         begin
             assert false report "send_rst:" severity note;
             wait until falling_edge(cmd_clk);
@@ -349,6 +381,7 @@ begin
         -- tx the ddr3 command_in
         --
         procedure tx_ddr3_cmd(variable ln_in : inout line; line_number : natural) is
+            variable wdt_counter : wdt_counter_type;
             type cmd_type is (C_REFRESH, C_AWAIT, C_OUTENA, C_READ, C_WRITE, C_DELAY);
  
             --
@@ -451,16 +484,16 @@ begin
                                         " clock cycle(s)" severity note;
                     for i in 1 to number loop
                         wait until falling_edge(cmd_clk);
-                        wdt_counter <= WDT_RESET_TIME;
+                        wdt_counter.reset;
                     end loop;
 
                 when others =>
                     wait_rdy;
-                    while wdt_counter > SYS_IDLE_TIME loop
+                    while wdt_counter.get_counter > SYS_IDLE_TIME loop
                         wait until falling_edge(cmd_clk);
                     end loop;
                     assert false report "unknown command" severity warning;
-                    while wdt_counter >= 2 loop
+                    while wdt_counter.get_counter >= 2 loop
                         wait until falling_edge(cmd_clk);
                     end loop;
                     wait until falling_edge(cmd_clk);
@@ -549,8 +582,10 @@ begin
             std.env.stop(0);        
         end procedure execute_ascii_file;
 
+        variable wdt_counter : wdt_counter_type;
+
     begin   -- process initial_begin
-        wdt_counter <= WDT_RESET_TIME;
+        wdt_counter.reset;
         in_ena <= '0';
         in_wena <= '0';
         in_bank <= (others => '0');
@@ -570,5 +605,6 @@ begin
         assert false report "call execute_ascii_file" severity note;
         execute_ascii_file(TB_COMMAND_SCRIPT_FILE);
         wait;
-    end process initial_begin;    
+    end process initial_begin;
+        
 end architecture sim;
