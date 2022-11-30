@@ -4,7 +4,10 @@ use ieee.std_logic_1164.all;
 use std.textio.all;
 
 package mf_utils is
+    procedure hread(variable ln : inout line; num : out integer; good : out boolean);
     procedure hread(variable ln : inout line; num : out integer);
+    alias hex_read is hread [line, integer, boolean];
+    alias hex_read is hread [line, integer];
 end package mf_utils;
 
 package body mf_utils is
@@ -16,7 +19,7 @@ package body mf_utils is
     -- Skips leading whitespace, stops reading when it detects an
     -- invalid hex character.
     --
-    procedure hread(variable ln : inout line; num : out integer) is
+    procedure hread(variable ln : inout line; num : out integer; good : out boolean) is
         constant hvals      : string := "0123456789ABCDEF0123456789abcdef";
         variable c          : character;
         variable maxdepth   : natural;
@@ -83,8 +86,21 @@ package body mf_utils is
             end loop;
             -- call recursive part
             num := recursive_hread(1);
+            -- error checking
+            if maxdepth < 1 then       -- did we read at least a single hex character?
+                good := false;
+            else 
+                good := true;
+            end if;
             -- assert false report "hread: " & ln.all & " maxdepth was " & integer'image(maxdepth) severity note;
         end if;
+    end hread;
+
+    -- the same as above but no error checking
+    procedure hread(variable ln : inout line; num : out integer) is
+        variable good : boolean;
+    begin
+        hread(ln, num, good);
     end hread;
 end package body mf_utils;
 --
