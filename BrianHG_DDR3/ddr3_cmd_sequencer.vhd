@@ -14,7 +14,7 @@ entity ddr3_cmd_sequencer is
         DDR3_RWDQ_BITS      : natural := 16;    -- must equal to total bus width accross all DDR3 ram chips. The mask width is divided by 8
         PORT_VECTOR_SIZE    : natural := 8;     -- set the width of the in_rd_vector & out_rd_vector
         CAL_WIDTH           : natural := 2;     -- should be DDR3_RWDQ_BITS / 8 -- the total bit width of the 'high' and 'low' pins
-        EXTRA_SPEED         : boolean := true;  -- enable for even better FMAX performance or when overclocking the core. This will increase logic cell usage
+        EXTRA_SPEED         : boolean := true   -- enable for even better FMAX performance or when overclocking the core. This will increase logic cell usage
     );
     port
     (
@@ -57,5 +57,24 @@ entity ddr3_cmd_sequencer is
 end entity ddr3_cmd_sequencer;
 
 architecture rtl of ddr3_cmd_sequencer is
+    -- multistage pipeline registers, deliberately laid out by name for visual purposes
+    type pipeline_register_type is record
+        wena            : std_ulogic;
+        bank            : std_ulogic_vector(DDR3_WIDTH_BANK - 1 downto 0);
+        ras             : std_ulogic_vector(DDR3_WIDTH_ROW - 1 downto 0);
+        cas             : std_ulogic_vector(DDR3_WIDTH_CAS - 1 downto 0);
+        wdata           : std_ulogic_vector(DDR3_RWDQ_BITS - 1 downto 0);
+        wmask           : std_ulogic_vector(DDR3_RWDQ_BITS / 8 - 1 downto 0);
+        ref_req         : std_ulogic;
+    end record;
+
+    type pipeline_register_array_type is array(integer range <>) of pipeline_register_type;
+    signal pipeline_registers   : pipeline_register_array_type(1 to 4) :=
+        (
+            /* 1 */ ('0', (others => '0'), (others => '0'), (others => '0'), (others => '0'), (others => '0'), '0'),
+            /* 2 */ ('0', (others => '0'), (others => '0'), (others => '0'), (others => '0'), (others => '0'), '0'),
+            /* 3 */ ('0', (others => '0'), (others => '0'), (others => '0'), (others => '0'), (others => '0'), '0'),
+            /* 4 */ ('0', (others => '0'), (others => '0'), (others => '0'), (others => '0'), (others => '0'), '0')
+        );
 begin
 end architecture rtl;
