@@ -60,7 +60,7 @@ architecture rtl of ddr3_cmd_sequencer is
     -- multistage pipeline registers, deliberately laid out by name for visual purposes
     type pipeline_register_type is record
         wena            : std_ulogic;
-        bank            : std_ulogic_vector(DDR3_WIDTH_BANK - 1 downto 0);
+        bank            : natural range 0 to 2 ** DDR3_WIDTH_BANK - 1;
         ras             : std_ulogic_vector(DDR3_WIDTH_ROW - 1 downto 0);
         cas             : std_ulogic_vector(DDR3_WIDTH_CAS - 1 downto 0);
         wdata           : std_ulogic_vector(DDR3_RWDQ_BITS - 1 downto 0);
@@ -69,12 +69,293 @@ architecture rtl of ddr3_cmd_sequencer is
     end record;
 
     type pipeline_register_array_type is array(integer range <>) of pipeline_register_type;
-    signal pipeline_registers   : pipeline_register_array_type(1 to 4) :=
+    signal s   : pipeline_register_array_type(1 to 4) :=
         (
-            /* 1 */ ('0', (others => '0'), (others => '0'), (others => '0'), (others => '0'), (others => '0'), '0'),
-            /* 2 */ ('0', (others => '0'), (others => '0'), (others => '0'), (others => '0'), (others => '0'), '0'),
-            /* 3 */ ('0', (others => '0'), (others => '0'), (others => '0'), (others => '0'), (others => '0'), '0'),
-            /* 4 */ ('0', (others => '0'), (others => '0'), (others => '0'), (others => '0'), (others => '0'), '0')
+            /* 1 */ ('0', 0, (others => '0'), (others => '0'), (others => '0'), (others => '0'), '0'),
+            /* 2 */ ('0', 0, (others => '0'), (others => '0'), (others => '0'), (others => '0'), '0'),
+            /* 3 */ ('0', 0, (others => '0'), (others => '0'), (others => '0'), (others => '0'), '0'),
+            /* 4 */ ('0', 0, (others => '0'), (others => '0'), (others => '0'), (others => '0'), '0')
         );
-begin
+    signal s1_ready,
+           s2_ready,
+           s3_ready,
+           s4_ready     : std_ulogic := '0';
+    signal s1_ack,
+           s2_ack,
+           s3_ack,
+           s4_ack       : std_ulogic := '0';
+    signal s1_load,
+           s2_load,
+           s3_load,
+           s4_load      : std_ulogic := '0';
+    signal s1_busy,
+           s4_busy      : std_ulogic := '0';
+
+    subtype bank_row_mem_type is std_ulogic_vector(DDR3_WIDTH_ROW - 1 downto 0);
+    type bank_row_mem_type_array is array(0 to 2 ** DDR3_WIDTH_BANK - 1) of bank_row_mem_type;
+
+    signal bank_row_mem : bank_row_mem_type_array := (others => (others => '0'));
+    attribute preserve : boolean;
+    attribute preserve of bank_row_mem : signal is true;
+    signal bank_mem_in_compare,
+           row_in_compare       : std_ulogic_vector(15 downto 0);
+
+    signal s3_bank_match        : std_ulogic := '0';
+    attribute preserve of s3_bank_match : signal is true;
+
+    signal phold                : std_ulogic := '0';
+
+    signal bank_act             : std_ulogic_vector(2 ** DDR3_WIDTH_BANK - 1 downto 0) := (others => '0');
+    attribute preserve of bank_act : signal is true;
+
+    signal bank_act_any : std_ulogic;
+    attribute preserve of bank_act_any : signal is true;
+
+    signal idle_counter : natural range 0 to 31 := 0;
+    signal idle_reset   : std_ulogic := '0';
+
+    signal ref_req,
+           in_ref_req,
+           in_ref_lat,
+           in_ref_lat2,
+           ref_hold     : std_ulogic := '0';
+
+    signal in_read_rdy_tdl,
+           s4_ready_t   : std_ulogic := '0';
+
+    signal in_ena_dl,
+           busy_t,
+           in_busy_int,
+           in_ena_int,
+           s4_ack_t     : std_ulogic := '0';
+
+    subtype b4 is std_ulogic_vector(3 downto 0);
+    constant CMD_MRS    : b4 := std_ulogic_vector(to_unsigned(0, b4'length)); 
+    constant CMD_REF    : b4 := std_ulogic_vector(to_unsigned(1, b4'length)); 
+    constant CMD_PRE    : b4 := std_ulogic_vector(to_unsigned(2, b4'length)); 
+    constant CMD_ACT    : b4 := std_ulogic_vector(to_unsigned(3, b4'length)); 
+    constant CMD_WRI    : b4 := std_ulogic_vector(to_unsigned(4, b4'length)); 
+    constant CMD_REA    : b4 := std_ulogic_vector(to_unsigned(5, b4'length)); 
+    constant CMD_ZQC    : b4 := std_ulogic_vector(to_unsigned(6, b4'length)); 
+    constant CMD_NOP    : b4 := std_ulogic_vector(to_unsigned(15, b4'length));
+
+    subtype b3 is std_ulogic_vector(2 downto 0);
+    constant TX_PREA_ALL    : b3 := std_ulogic_vector(to_unsigned(0, b3'length));
+    constant TX_REFRESH     : b3 := std_ulogic_vector(to_unsigned(1, b3'length));
+    constant TX_PREA        : b3 := std_ulogic_vector(to_unsigned(2, b3'length));
+    constant TX_ACTIVATE    : b3 := std_ulogic_vector(to_unsigned(3, b3'length));
+    constant TX_READ        : b3 := std_ulogic_vector(to_unsigned(4, b3'length));
+    constant TX_WRITE       : b3 := std_ulogic_vector(to_unsigned(5, b3'length));
+
+    subtype b8 is std_ulogic_vector(7 downto 0);
+    constant TXB_MRS        : b8 := "00000001";
+    constant TXB_REF        : b8 := "00000010";
+    constant TXB_PRE        : b8 := "00000100";
+    constant TXB_ACT        : b8 := "00001000";
+    constant TXB_WRI        : b8 := "00010000";
+    constant TXB_REA        : b8 := "00100000";
+    constant TXB_ZQC        : b8 := "01000000";
+    constant TXB_NOP        : b8 := "10000000";         -- device NOP + deselect
+
+    signal vect_shift_out   : std_ulogic;
+    signal vect_fifo_data_out   : std_ulogic_vector(PORT_VECTOR_SIZE - 1 downto 0);
+
+    signal reset_latch,
+           reset_latch2         : std_ulogic;
+    attribute preserve of reset_latch, reset_latch2 : signal is true;
+
+    signal rcp_h                : std_ulogic_vector(3 downto 0) := (others => '0');
+    signal rcp_l                : std_ulogic_vector(3 downto 0) := (others => '0');
+
+    signal out_read_ready_p     : std_ulogic;
+    signal out_read_data_p      : std_ulogic_vector(DDR3_RWDQ_BITS - 1 downto 0) := (others => '0');
+    signal out_rd_vector_p      : std_ulogic_vector(PORT_VECTOR_SIZE - 1 downto 0) := (others => '0');
+
+    --
+    -- FIFO ram for the vector feed through.
+    --
+    subtype vec_t is std_ulogic_vector(PORT_VECTOR_SIZE - 1 downto 0);
+    type vec_mem_t is array(0 to 15) of vec_t;
+    signal vector_pipe_mem      : vec_mem_t := (others => (others => '0'));
+    signal out_rd_vector_int    : vec_t := (others => '0');
+    signal vwpos, vrpos         : b4 := (others => '0');
+    signal load_vect            : std_ulogic := '0';
+    signal vect_data_dl         : vec_t := (others => '0');
+
+begin -- architecture
+    p_comb : process(all)
+    begin
+        -- read and load flags must be sorted in reverse order to simulate properly.
+        -- This combinational logic generates the FIFO shifting pipe processor.
+        --
+
+        --
+        -- for stage 4, this generates a BUSY flag meaning that other commands need to be inserted into the output
+        -- before S3 should be allowed to send additional commands.
+        --
+        if in_ref_lat /= in_ref_lat2 then ref_req <= '1'; else ref_req <= '0'; end if;
+
+        if s3_ready then
+            if bank_act_any and s(3).ref_req then s4_busy <= '1';
+            elsif not bank_act_any and s(3).ref_req then s4_busy <= '0';
+            elsif not(s3_bank_match) and bank_act(s(3).bank) and not phold then s4_busy <= '1';
+            elsif not bank_act(s(3).bank) then s4_busy <= '1';
+            end if;
+        else
+            s4_busy <= '0';
+        end if;
+
+        s4_ack_t <= out_ack;
+
+        -- translate the toggle input ack to positive logic logic ack.
+        if not USE_TOGGLE_OUT then
+            s4_ack <= out_ack;
+        elsif s4_ack = s4_ready_t then
+            s4_ack <= '1';
+        else
+            s4_ack <= '0';
+        end if;
+
+        -- assign the earlier stage flags top operate like a FIFO or elastic buffer which shows the output in
+        -- advance of the '_read' signal.
+        s4_load <= s3_ready and (not s4_ready or (s4_load and not s4_busy));
+        s3_ack <= s3_load;
+
+        s2_load <= s1_ready and (not s2_ready or s3_load);
+        s1_ack <= s2_load;
+        s1_busy <= s1_ready and not s1_ack;
+
+        -- assign i/o ports
+        in_busy_int <= s1_busy or ref_hold;
+
+        if USE_TOGGLE_ENA then
+            in_busy <= busy_t;
+        else
+            in_busy <= in_busy_int;
+        end if;
+
+        if USE_TOGGLE_ENA then
+            if in_ena /= in_ena_dl and not (in_busy_int = '1') then
+                in_ena_int <= '1';
+            end if;
+        else
+            in_ena_int <= in_ena;
+        end if;
+
+        s1_load <= (in_ena_int and not s1_busy) or in_ref_req;
+
+        if not USE_TOGGLE_OUT then
+            out_ready <= s4_ready;          -- assign the output ready flag to s4_ready
+        else
+            out_ready <= s4_ready_t;        -- assign the toggle version of the output ready
+        end if;
+
+        row_in_compare <= s(2).ras;
+    end process p_comb;
+
+    gen: if EXTRA_SPEED generate
+        p_proc : process
+        begin
+            wait until rising_edge(clk);
+            out_read_data <= out_read_data_p;
+            out_rd_vector <= out_rd_vector_p;
+            out_read_ready <= out_read_ready_p;
+        end process p_proc;
+    else generate
+        out_read_data <= out_read_data_p;
+        out_rd_vector <= out_rd_vector_p;
+        out_read_ready <= out_read_ready_p;
+    end generate gen;
+
+    p_pipeline : process
+    begin
+        wait until rising_edge(clk);
+        reset_latch <= reset;
+        reset_latch2 <= reset_latch;
+
+        --
+        -- manage read data and read-calibration test pattern.
+        -- Always latch read data to output regardless of reset so that the power-up sequence may analyze the read-calibration pattern
+        --
+        in_read_rdy_tdl <= in_read_rdy_t;       -- detect toggle change
+        read_cal_pat_t <= in_read_rdy_tdl;      -- toggle the read cal pattern
+        
+        if in_read_rdy_t /= in_read_rdy_tdl then
+            out_read_data_p <= in_read_data;
+        end if;
+
+        for i in 0 to 3 loop
+            -- rcp_h(i) <= out_read_data_p(i * 2 * cal_width to cal_width)
+            -- TODO: translate that mess
+        end loop;
+        if rcp_h = "1111" and rcp_l = "1111" then
+            read_cal_pat_v <= '1';
+        else 
+            read_cal_pat_v <= '0';
+        end if;
+
+        --
+        -- vector FIFO memory FMAX accelerator by isolating its read inside a 2nd layer LC for write and read
+        --
+        load_vect <= s1_load and not in_ref_req and not in_wena;
+        vect_data_dl <= in_rd_vector;
+        out_rd_vector_int <= vector_pipe_mem(to_integer(unsigned(vrpos)));    -- add a dff latch stage to help improve FMAX performance
+        if in_read_rdy_t /= in_read_rdy_tdl then
+            out_rd_vector_p <= out_rd_vector_int;       -- select the dff latch stage
+        end if;
+
+        if reset_latch2 then
+            bank_act <= (others => '0');
+            bank_act_any <= '0';
+            phold <= '0';
+
+            s1_ready <= '0';
+            s2_ready <= '0';
+            s3_ready <= '0';
+            s4_ready <= '0';
+            s4_ready_t <= '0';
+
+            ref_hold <= '0';
+            in_ref_req <= '0';
+            in_ref_lat <= in_refresh_t;
+            in_ref_lat2 <= in_ref_lat;
+            out_refresh_ack <= in_ref_lat2;
+
+            out_cmd <= CMD_NOP;
+            out_txb <= (others => '0');
+
+            out_read_ready_p <= '0';
+
+            in_ena_dl <= in_ena;
+            busy_t <= in_ena;
+
+            vwpos <= (others => '0');
+            vrpos <= (others => '0');
+        else
+            --
+            -- logic for handling in_ena/in_busy if 'USE_TOGGLE_ENA' is enabled
+            --
+
+            if not in_busy_int then
+                in_ena_dl <= in_ena;
+            end if;
+            if not in_busy_int then
+                busy_t <= in_ena;
+            end if;
+
+            --
+            -- generate a output which goes high after 32 clocks of nothing happening
+            --
+            idle_reset <= s2_ready;         -- make sure a refresh doesn't affect the idle timer
+            if idle_reset then
+                idle_counter <= 0;
+            elsif idle_counter < 31 then
+                idle_counter <= idle_counter + 1;
+            end if;
+            out_idle <= '0' when idle_counter < 31 else '1';
+        end if;
+    end process p_pipeline;
+
 end architecture rtl;
+
+
