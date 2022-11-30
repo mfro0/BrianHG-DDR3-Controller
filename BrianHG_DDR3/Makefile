@@ -1,6 +1,9 @@
 PATH := $(PATH):/opt/intelFPGA_lite/20.1/modelsim_ase/bin/
 
-VHDL_SRCS = ddr3_cmd_sequencer_tb.vhd
+VHDL_SRCS = \
+	ddr3_cmd_sequencer.vhd \
+	ddr3_cmd_sequencer_tb.vhd
+	
 SV_SRCS = BrianHG_DDR3_CONTROLLER_top.sv BrianHG_DDR3_CMD_SEQUENCER.sv
 VCOM_OPTS=-2008
 
