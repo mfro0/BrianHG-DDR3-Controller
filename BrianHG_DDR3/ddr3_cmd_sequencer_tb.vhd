@@ -149,19 +149,19 @@ entity ddr3_cmd_sequencer_tb is
     generic
     (
         -- system clock generation and operation
-        CLK_MHZ_IN              : integer := 400;
+        CLK_MHZ_IN              : natural := 400;
 
         -- DDR3 ram chip configuration settings
-        DDR3_WIDTH_DQ           : integer := 8;
-        DDR3_NUM_CHIPS          : integer := 1;
+        DDR3_WIDTH_DQ           : natural := 8;
+        DDR3_NUM_CHIPS          : natural := 1;
 
-        DDR3_WIDTH_ADDR         : integer := 15;
-        DDR3_WIDTH_BANK         : integer := 3;
-        DDR3_WIDTH_CAS          : integer := 10;
-        DDR3_RWDQ_BITS          : integer := 64; -- DDR3_WIDTH_DQ * DDR3_NUM_CHIPS * 8;
+        DDR3_WIDTH_ADDR         : natural := 15;
+        DDR3_WIDTH_BANK         : natural := 3;
+        DDR3_WIDTH_CAS          : natural := 10;
+        DDR3_RWDQ_BITS          : natural := 64; -- DDR3_WIDTH_DQ * DDR3_NUM_CHIPS * 8;
 
         -- DDR3 controller configuration parameter settings
-        PORT_VECTOR_SIZE        : integer := 16
+        PORT_VECTOR_SIZE        : natural := 16
     );
 end entity ddr3_cmd_sequencer_tb;
 
@@ -240,7 +240,7 @@ architecture sim of ddr3_cmd_sequencer_tb is
         end function get_counter;
     end protected body wdt_counter_type;
 
-    constant DDR3_NUM_CK            : integer := DDR3_NUM_CHIPS;
+    constant DDR3_NUM_CK            : natural := DDR3_NUM_CHIPS;
     constant USE_TOGGLE_ENA         : boolean := false;
     constant USE_TOGGLE_OUT         : boolean := false;
     constant SYS_IDLE_TIME          : natural := WDT_RESET_TIME - 8;
@@ -402,6 +402,7 @@ begin -- architecture
         --
         procedure tx_ddr3_cmd(variable ln_in : inout line; line_number : natural) is
             variable wdt_counter : wdt_counter_type;
+
             type cmd_type is (C_REFRESH, C_AWAIT, C_OUTENA, C_READ, C_WRITE, C_DELAY);
  
             --
@@ -423,14 +424,14 @@ begin -- architecture
             variable cmd_str    : string(1 to 20);  -- string length must be at least length of longest cmd string
             variable cmd        : cmd_type;
             variable len        : natural;
-            variable number     : integer;
+            variable number     : natural;
             variable sl         : bit;
         begin
             string_read(ln_in, cmd_str, len);
 
             cmd_compare.lookup(cmds, cmd_str(1 to len), cmd);
         
-            assert false report "command=" & cmd_type'image(cmd) severity note;
+            -- assert false report "command=" & cmd_type'image(cmd) severity note;
 
             case cmd is
                 when C_REFRESH =>
@@ -558,7 +559,7 @@ begin -- architecture
                     -- assert false report "cmd=" & cmd & "cmd_len=" & integer'image(cmd_len) severity note;
                     if cmd(1) = '@' then
                         cmd_compare.lookup(commands, cmd(2 to cmd_len), c);
-                        assert false report "execute_ascii_file: cmd=" & cmd_type'image(c) & " (" & cmd & ")" severity note;
+                        -- assert false report "execute_ascii_file: cmd=" & cmd_type'image(c) & " (" & cmd & ")" severity note;
                 
                         case c is
                             when C_CMD =>
