@@ -25,7 +25,7 @@ entity ddr3_cmd_sequencer is
         in_busy             : out std_ulogic;
 
         in_wena             : in std_ulogic;
-        in_bank             : in std_ulogic_vector(DDR3_WIDTH_BANK - 1 downto 0);
+        in_bank             : in natural range 0 to 2 ** DDR3_WIDTH_BANK - 1;
         in_ras              : in std_ulogic_vector(DDR3_WIDTH_ROW - 1 downto 0);
         in_cas              : in std_ulogic_vector(DDR3_WIDTH_CAS - 1 downto 0);
         in_wdata            : in std_ulogic_vector(DDR3_RWDQ_BITS - 1 downto 0);
@@ -139,13 +139,7 @@ architecture rtl of ddr3_cmd_sequencer is
     constant CMD_ZQC    : b4 := std_ulogic_vector(to_unsigned(6, b4'length)); 
     constant CMD_NOP    : b4 := std_ulogic_vector(to_unsigned(15, b4'length));
 
-    subtype b3 is std_ulogic_vector(2 downto 0);
-    constant TX_PREA_ALL    : b3 := std_ulogic_vector(to_unsigned(0, b3'length));
-    constant TX_REFRESH     : b3 := std_ulogic_vector(to_unsigned(1, b3'length));
-    constant TX_PREA        : b3 := std_ulogic_vector(to_unsigned(2, b3'length));
-    constant TX_ACTIVATE    : b3 := std_ulogic_vector(to_unsigned(3, b3'length));
-    constant TX_READ        : b3 := std_ulogic_vector(to_unsigned(4, b3'length));
-    constant TX_WRITE       : b3 := std_ulogic_vector(to_unsigned(5, b3'length));
+    type cmd_type is (TX_PREA_ALL, TX_REFRESH, TX_PREA, TX_ACTIVATE, TX_READ, TX_WRITE);
 
     subtype b8 is std_ulogic_vector(7 downto 0);
     constant TXB_MRS        : b8 := "00000001";
@@ -178,10 +172,9 @@ architecture rtl of ddr3_cmd_sequencer is
     type vec_mem_t is array(0 to 15) of vec_t;
     signal vector_pipe_mem      : vec_mem_t := (others => (others => '0'));
     signal out_rd_vector_int    : vec_t := (others => '0');
-    signal vwpos, vrpos         : b4 := (others => '0');
+    signal vwpos, vrpos         : natural range 0 to 15;
     signal load_vect            : std_ulogic := '0';
     signal vect_data_dl         : vec_t := (others => '0');
-
 begin -- architecture
     p_comb : process(all)
     begin
@@ -268,6 +261,65 @@ begin -- architecture
     end generate gen;
 
     p_pipeline : process
+        procedure set_cas is
+        begin
+            out_a(9 downto 0) <= s(3).cas(9 downto 0);      -- column address at the beginning of a sequential burst
+            if DDR3_WIDTH_CAS = 10 then
+                out_a(11) <= '0';                           -- default 0 for additional column address
+            else
+                out_a(11) <= s(3).cas(10);                  -- assign the additional MSB column address ised in 4 bit DDR3 devices
+            end if;
+            out_a(10) <= '0';                               -- disable auto-precharge. We keep the banks open and precharge manually only when needed
+            out_a(12) <= '1';                               -- set burst length to BL 8
+            out_a(DDR3_WIDTH_ROW - 1 downto 13) <= (others => '0');
+        end procedure set_cas;
+
+        procedure send_cmd(cmd : cmd_type) is
+        begin
+            case cmd is
+                when TX_REFRESH =>
+                    phold <= '0';                   -- no longer needed
+                    out_cmd <= CMD_REF;
+                    out_txb <= TXB_REF;
+                    out_refresh_ack <= in_ref_lat2;
+                
+                when TX_PREA_ALL =>
+                    phold <= '0';                   -- no longer needed
+                    out_cmd <= CMD_PRE;
+                    out_txb <= TXB_PRE;
+                    bank_act <= (others => '0');    -- deactivate all banks
+                    bank_act_any <= '0';
+                    out_a(10) <= '1';               -- all bank precharge
+                
+                when TX_PREA =>
+                    phold <= '0';                   -- no longer needed
+                    out_cmd <= CMD_PRE;
+                    out_txb <= TXB_PRE;
+                    bank_act(s(3).bank) <= '0';     -- deactivate the precharged bank
+                    out_a(10) <= '0';               -- single bank precharge
+
+                when TX_ACTIVATE =>
+                    phold <= '0';                   -- no longer needed
+                    bank_act(s(3).bank) <= '1';     -- activate the selected bank
+                    bank_act_any <= '1';
+                    out_a <= s(3).ras;              -- which row to activate
+                    out_cmd <= CMD_ACT;
+                    out_txb <= TXB_ACT;
+                
+                when TX_READ =>
+                    phold <= '0';                   -- no longer needed
+                    set_cas;                        -- output the CAS address on the DDR3 A bus
+                    out_cmd <= CMD_REA;
+                    out_txb <= TXB_REA;
+
+                when TX_WRITE =>
+                    phold <= '0';                   -- no longer needed
+                    set_cas;                        -- output the CAS address on the DDR3 A bus
+                    out_cmd <= CMD_WRI;
+                    out_txb <= TXB_WRI;
+            end case;
+        end procedure send_cmd;
+
     begin
         wait until rising_edge(clk);
         reset_latch <= reset;
@@ -285,7 +337,8 @@ begin -- architecture
         end if;
 
         for i in 0 to 3 loop
-            -- rcp_h(i) <= out_read_data_p(i * 2 * cal_width to cal_width)
+            rcp_h(i) <= out_read_data_p(i * 2 * cal_width to cal_width);
+
             -- TODO: translate that mess
         end loop;
         if rcp_h = "1111" and rcp_l = "1111" then
@@ -299,7 +352,7 @@ begin -- architecture
         --
         load_vect <= s1_load and not in_ref_req and not in_wena;
         vect_data_dl <= in_rd_vector;
-        out_rd_vector_int <= vector_pipe_mem(to_integer(unsigned(vrpos)));    -- add a dff latch stage to help improve FMAX performance
+        out_rd_vector_int <= vector_pipe_mem(vrpos);    -- add a dff latch stage to help improve FMAX performance
         if in_read_rdy_t /= in_read_rdy_tdl then
             out_rd_vector_p <= out_rd_vector_int;       -- select the dff latch stage
         end if;
@@ -329,8 +382,8 @@ begin -- architecture
             in_ena_dl <= in_ena;
             busy_t <= in_ena;
 
-            vwpos <= (others => '0');
-            vrpos <= (others => '0');
+            vwpos <= 0;
+            vrpos <= 0;
         else
             --
             -- logic for handling in_ena/in_busy if 'USE_TOGGLE_ENA' is enabled
@@ -353,9 +406,133 @@ begin -- architecture
                 idle_counter <= idle_counter + 1;
             end if;
             out_idle <= '0' when idle_counter < 31 else '1';
+
+            -- latch refresh request.
+            in_ref_lat <= in_refresh_t;
+
+            --
+            -- refresh management. Sets up a sequence of events where external normal command input is
+            -- halted, wait for the halt to clear the last command, send a refresh down the pipe,
+            -- then release the halt.
+            --
+
+            -- prevent refresh load if an external command is being sent, yet allow the insert of
+            -- the refresh during an existing busy port generated by the external commands saturating
+            -- the input. This way, no request commands will be lost if a refresh and input request
+            -- come in at the same time.
+
+            if ref_req and not ref_hold and not s1_load then
+                ref_hold <= '1';
+            elsif ref_hold and not s1_ready and not in_ref_req then
+                in_ref_req <= '1';
+                in_ref_lat2 <= in_ref_lat;
+            elsif ref_hold and in_ref_req then
+                in_ref_req <= '0';
+            elsif ref_hold then
+                ref_hold <= '0';
+            end if;
+
+            --
+            -- Stage 1. Load input into registers, copy the previous accessed current requested bank's
+            -- row into the compare register and update the bank's row register with the new row request coming in.
+            --
+            if s1_load then
+                s(1).wena <= in_wena;
+                s(1).bank <= in_bank;
+                s(1).ras <= in_ras;
+                s(1).cas <= in_cas;
+                s(1).wdata <= in_wdata;
+                s(1).wmask <= in_wmask;
+
+                -- generate s1_ready flag
+                s1_ready <= '1';
+            elsif s1_ack then
+                s1_ready <= '0';
+            end if;
+            
+            if s2_load then
+                bank_mem_in_compare <= bank_row_mem(s(1).bank);
+                bank_row_mem(s(1).bank) <= s(1).ras;
+
+                s(2) <= s(1);
+
+                s2_ready <= '1';
+            elsif s2_ack then
+                s2_ready <= '0';
+            end if;
+
+            --
+            -- Stage 3. Check if all the 4 bits of s2's match are equal and coalesce that into 1 register
+            --
+            if s3_load then
+                s(3) <= s(2);
+                s(3).wmask <= s(2).wmask xor std_ulogic_vector(to_unsigned(2 ** (DDR3_RWDQ_BITS / 8) - 1,
+                                                               s(3).wmask'length));
+                if bank_mem_in_compare = row_in_compare and not s(2).ref_req = '1' then 
+                    s3_bank_match <=  '1';
+                else
+                    s3_bank_match <= '0';
+                end if;
+                s3_ready <= '1';
+            elsif s3_ack then
+                s3_ready <= '0';
+            end if;
+
+            --
+            -- Stage 4. Generate commands
+            --
+            if s4_load then
+                out_bank <= std_ulogic_vector(to_unsigned(s(3).bank, out_bank'length));
+                out_wdata <= s(3).wdata;
+                out_wmask <= s(3).wmask;
+
+                if bank_act_any and s(3).ref_req then
+                    send_cmd(TX_PREA_ALL);
+                elsif not bank_act_any and s(3).ref_req then
+                    send_cmd(TX_REFRESH);
+                elsif not s3_bank_match and bank_act(s(3).bank) and not phold then
+                    send_cmd(TX_PREA);
+                elsif not bank_act(s(3).bank) then
+                    send_cmd(TX_ACTIVATE);
+                elsif not s(3).wena then
+                    send_cmd(TX_READ);
+                else
+                    send_cmd(TX_WRITE);
+                end if;
+            end if;
+
+            -- generate s4_ready flag
+            if s4_load or s4_busy then
+                s4_ready <= '1';
+            elsif s4_ack then
+                s4_ready <= '0';
+            end if;
+
+            -- generate s4_ready_t flag
+            if (s4_load = '1' or s4_busy = '1') and s4_ack = s4_ready_t then
+                s4_ready_t <= not s4_ready_t;
+            end if;
+
+            --
+            -- DDR3 read data and vector pipeline processing
+            --
+            if load_vect then                                   -- a valid read command has been loaded
+                vector_pipe_mem(vwpos) <= vect_data_dl;         -- load vector into pipe mem
+                vwpos <= vwpos + 1;                             -- increment write position
+            end if;
+
+            if in_read_rdy_t /= in_read_rdy_tdl then            -- read data from the DDR3 has returned a read
+                vrpos <= vrpos + 1;                             -- increment read position
+                if not USE_TOGGLE_ENA then                      
+                    out_read_ready_p <= '1';                    -- no toggle, turn on for 1 clock period
+                else
+                    out_read_ready_p <= not out_read_ready_p;   -- toggle output mode
+                end if;
+            elsif not USE_TOGGLE_ENA then
+                out_read_ready_p <= '0';                        -- no toggle, turn on for one clock period
+            end if;
         end if;
     end process p_pipeline;
-
 end architecture rtl;
 
 
