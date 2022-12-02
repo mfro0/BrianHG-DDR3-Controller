@@ -184,7 +184,7 @@ architecture sim of ddr3_cmd_sequencer_tb is
             in_ena                  : in std_ulogic;
             in_busy                 : out std_ulogic;
             in_wena                 : in std_ulogic;
-            in_bank                 : in std_ulogic_vector(DDR3_WIDTH_BANK - 1 downto 0);
+            in_bank                 : natural;
             in_ras                  : in std_ulogic_vector(DDR3_WIDTH_ROW - 1 downto 0);
 
             in_cas                  : in std_ulogic_vector(DDR3_WIDTH_CAS - 1 downto 0);
@@ -232,7 +232,9 @@ architecture sim of ddr3_cmd_sequencer_tb is
         end procedure reset;
         procedure decrement is
         begin
-            wdt_counter := wdt_counter - 1;
+            if wdt_counter > 0 then
+                wdt_counter := wdt_counter - 1;
+            end if;
         end procedure decrement;
         impure function get_counter return natural is
         begin
@@ -262,7 +264,7 @@ architecture sim of ddr3_cmd_sequencer_tb is
     signal rst_in                   : std_ulogic := '1';
     signal cmd_clk                  : std_ulogic := '1';
     signal in_ena, in_wena          : std_ulogic;
-    signal in_bank                  : std_ulogic_vector(DDR3_WIDTH_BANK - 1 downto 0);
+    signal in_bank                  : natural;
     signal in_ras                   : std_ulogic_vector(DDR3_WIDTH_ADDR - 1 downto 0);
     signal in_cas                   : std_ulogic_vector(DDR3_WIDTH_CAS - 1 downto 0);
     signal in_wdata                 : std_ulogic_vector(DDR3_RWDQ_BITS - 1 downto 0);
@@ -291,7 +293,8 @@ begin -- architecture
         signal out_read_data        : std_ulogic_vector(DDR3_RWDQ_BITS - 1 downto 0);
     begin
         i_cmd_ack <= cmd_ack;
-        i_cmd_sequencer : BrianHG_DDR3_CMD_SEQUENCER
+        -- i_cmd_sequencer : BrianHG_DDR3_CMD_SEQUENCER
+        i_cmd_sequencer : entity work.ddr3_cmd_sequencer
             generic map
             (
                 USE_TOGGLE_ENA          => false,
@@ -332,7 +335,7 @@ begin -- architecture
                 out_refresh_ack         => ref_ack,
                 out_idle                => idle,
                 read_cal_pat_t          => read_cal_pat_t,
-                read_cal_pat_v          => read_cal_pat_v
+                read_cal_pat_valid      => read_cal_pat_v
             );
     end block b_cmd_sequencer;
 
@@ -448,7 +451,7 @@ begin -- architecture
 
                 when C_READ =>
                     hread(ln_in, number);
-                    in_bank <= std_ulogic_vector(to_unsigned(number, in_bank'length));
+                    in_bank <= number;
                     hread(ln_in, number);
                     in_ras <= std_ulogic_vector(to_unsigned(number, in_ras'length));
                     hread(ln_in, number);
@@ -459,7 +462,7 @@ begin -- architecture
                     -- new signal values will only been taken at next clock edge
                     -- so we just wait for it here
                     wait until rising_edge(cmd_clk);
-                    assert false report "read bank: " & to_hstring(in_bank) &
+                    assert false report "read bank: " & to_hstring(to_unsigned(in_bank, 4)) &
                                         " ras: " & to_hstring(in_ras) &
                                         " cas: " & to_hstring(in_cas) &
                                         " to vector: "  & to_hstring(in_vector)
@@ -469,7 +472,7 @@ begin -- architecture
             
                 when C_WRITE =>
                     hread(ln_in, number);
-                    in_bank <= std_ulogic_vector(to_unsigned(number, in_bank'length));
+                    in_bank <= number;
 
                     hread(ln_in, number);
                     in_ras <= std_ulogic_vector(to_unsigned(number, in_ras'length));
@@ -484,7 +487,7 @@ begin -- architecture
                     in_wdata <= std_ulogic_vector(to_unsigned(number, in_wdata'length));
 
                     wait until rising_edge(cmd_clk);    -- see above
-                    assert false report "write bank: " & to_hstring(in_bank) &
+                    assert false report "write bank: " & to_hstring(to_unsigned(in_bank, 4)) &
                                         " ras: " & to_hstring(in_ras) &
                                         " cas: " & to_hstring(in_cas) &
                                         " wmask: " & to_hstring(in_wmask) &
@@ -598,7 +601,7 @@ begin -- architecture
         wdt_counter.reset;
         in_ena <= '0';
         in_wena <= '0';
-        in_bank <= (others => '0');
+        in_bank <= 0;
         in_ras <= (others => '0');
         in_cas <= (others => '0');
         in_wdata <= (others => '0');

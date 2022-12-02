@@ -67,19 +67,24 @@ architecture rtl of ddr3_cmd_sequencer is
         wmask           : std_ulogic_vector(DDR3_RWDQ_BITS / 8 - 1 downto 0);
         ref_req         : std_ulogic;
         ready           : std_ulogic;
-        ack             : std_ulogic;
-        load            : std_ulogic;
     end record;
 
     type pipeline_register_array_type is array(integer range <>) of pipeline_register_type;
     signal s   : pipeline_register_array_type(1 to 4) :=
         (
-            /* 1 */ ('0', 0, (others => '0'), (others => '0'), (others => '0'), (others => '0'), '0', '0', '0', '0'),
-            /* 2 */ ('0', 0, (others => '0'), (others => '0'), (others => '0'), (others => '0'), '0', '0', '0', '0'),
-            /* 3 */ ('0', 0, (others => '0'), (others => '0'), (others => '0'), (others => '0'), '0', '0', '0', '0'),
-            /* 4 */ ('0', 0, (others => '0'), (others => '0'), (others => '0'), (others => '0'), '0', '0', '0', '0')
+            /* 1 */ ('0', 0, (others => '0'), (others => '0'), (others => '0'), (others => '0'), '0', '0'),
+            /* 2 */ ('0', 0, (others => '0'), (others => '0'), (others => '0'), (others => '0'), '0', '0'),
+            /* 3 */ ('0', 0, (others => '0'), (others => '0'), (others => '0'), (others => '0'), '0', '0'),
+            /* 4 */ ('0', 0, (others => '0'), (others => '0'), (others => '0'), (others => '0'), '0', '0')
         );
- 
+    signal s1_load,
+           s2_load,
+           s3_load,
+           s4_load      : std_ulogic := '0';
+    signal s1_ack,
+           s2_ack,
+           s3_ack,
+           s4_ack       : std_ulogic := '0';
     signal s1_busy,
            s4_busy      : std_ulogic := '0';
 
@@ -90,7 +95,7 @@ architecture rtl of ddr3_cmd_sequencer is
     attribute preserve : boolean;
     attribute preserve of bank_row_mem : signal is true;
     signal bank_mem_in_compare,
-           row_in_compare       : std_ulogic_vector(15 downto 0);
+           row_in_compare       : std_ulogic_vector(DDR3_WIDTH_ROW - 1 downto 0);
 
     signal s3_bank_match        : std_ulogic := '0';
     attribute preserve of s3_bank_match : signal is true;
@@ -195,21 +200,21 @@ begin -- architecture
 
         -- translate the toggle input ack to positive logic logic ack.
         if not USE_TOGGLE_OUT then
-            s(4).ack <= out_ack;
-        elsif s(4).ack = s4_ready_t then
-            s(4).ack <= '1';
+            s4_ack <= out_ack;
+        elsif s4_ack = s4_ready_t then
+            s4_ack <= '1';
         else
-            s(4).ack <= '0';
+            s4_ack <= '0';
         end if;
 
         -- assign the earlier stage flags top operate like a FIFO or elastic buffer which shows the output in
         -- advance of the '_read' signal.
-        s(4).load <= s(3).ready and (not s(4).ready or (s(4).load and not s4_busy));
-        s(3).ack <= s(3).load;
+        s4_load <= s(3).ready and (not s(4).ready or (s4_load and not s4_busy));
+        s3_ack <= s3_load;
 
-        s(2).load <= s(1).ready and (not s(2).ready or s(3).load);
-        s(1).ack <= s(2).load;
-        s1_busy <= s(1).ready and not s(1).ack;
+        s2_load <= s(1).ready and (not s(2).ready or s3_load);
+        s1_ack <= s2_load;
+        s1_busy <= s(1).ready and not s1_ack;
 
         -- assign i/o ports
         in_busy_int <= s1_busy or ref_hold;
@@ -228,7 +233,7 @@ begin -- architecture
             in_ena_int <= in_ena;
         end if;
 
-        s(1).load <= (in_ena_int and not s1_busy) or in_ref_req;
+        s1_load <= (in_ena_int and not s1_busy) or in_ref_req;
 
         if not USE_TOGGLE_OUT then
             out_ready <= s(4).ready;          -- assign the output ready flag to s(4).ready
@@ -335,7 +340,7 @@ begin -- architecture
 
         for i in 0 to 3 loop
             l := i * CAL_WIDTH * 2 + CAL_WIDTH - 1;
-            r := i * CAL_WIDTH - 1;
+            r := i * CAL_WIDTH;
 
             if out_read_data_p(l downto r) = cal_data_type'(others => '1') then
                 rcp_h(i) <= '1';
@@ -359,7 +364,7 @@ begin -- architecture
         --
         -- vector FIFO memory FMAX accelerator by isolating its read inside a 2nd layer LC for write and read
         --
-        load_vect <= s(1).load and not in_ref_req and not in_wena;
+        load_vect <= s1_load and not in_ref_req and not in_wena;
         vect_data_dl <= in_rd_vector;
         out_rd_vector_int <= vector_pipe_mem(vrpos);    -- add a dff latch stage to help improve FMAX performance
         if in_read_rdy_t /= in_read_rdy_tdl then
@@ -430,7 +435,7 @@ begin -- architecture
             -- the input. This way, no request commands will be lost if a refresh and input request
             -- come in at the same time.
 
-            if ref_req and not ref_hold and not s(1).load then
+            if ref_req and not ref_hold and not s1_load then
                 ref_hold <= '1';
             elsif ref_hold and not s(1).ready and not in_ref_req then
                 in_ref_req <= '1';
@@ -445,7 +450,7 @@ begin -- architecture
             -- Stage 1. Load input into registers, copy the previous accessed current requested bank's
             -- row into the compare register and update the bank's row register with the new row request coming in.
             --
-            if s(1).load then
+            if s1_load then
                 s(1).wena <= in_wena;
                 s(1).bank <= in_bank;
                 s(1).ras <= in_ras;
@@ -455,25 +460,25 @@ begin -- architecture
 
                 -- generate s(1).ready flag
                 s(1).ready <= '1';
-            elsif s(1).ack then
+            elsif s1_ack then
                 s(1).ready <= '0';
             end if;
             
-            if s(2).load then
+            if s2_load then
                 bank_mem_in_compare <= bank_row_mem(s(1).bank);
                 bank_row_mem(s(1).bank) <= s(1).ras;
 
                 s(2) <= s(1);
 
                 s(2).ready <= '1';
-            elsif s(2).ack then
+            elsif s2_ack then
                 s(2).ready <= '0';
             end if;
 
             --
             -- Stage 3. Check if all the 4 bits of s2's match are equal and coalesce that into 1 register
             --
-            if s(3).load then
+            if s3_load then
                 s(3) <= s(2);
                 s(3).wmask <= s(2).wmask xor std_ulogic_vector(to_unsigned(2 ** (DDR3_RWDQ_BITS / 8) - 1,
                                                                s(3).wmask'length));
@@ -483,14 +488,14 @@ begin -- architecture
                     s3_bank_match <= '0';
                 end if;
                 s(3).ready <= '1';
-            elsif s(3).ack then
+            elsif s3_ack then
                 s(3).ready <= '0';
             end if;
 
             --
             -- Stage 4. Generate commands
             --
-            if s(4).load then
+            if s4_load then
                 out_bank <= std_ulogic_vector(to_unsigned(s(3).bank, out_bank'length));
                 out_wdata <= s(3).wdata;
                 out_wmask <= s(3).wmask;
@@ -511,14 +516,14 @@ begin -- architecture
             end if;
 
             -- generate s(4).ready flag
-            if s(4).load or s4_busy then
+            if s4_load or s4_busy then
                 s(4).ready <= '1';
-            elsif s(4).ack then
+            elsif s4_ack then
                 s(4).ready <= '0';
             end if;
 
             -- generate s4_ready_t flag
-            if (s(4).load = '1' or s4_busy = '1') and s(4).ack = s4_ready_t then
+            if (s4_load = '1' or s4_busy = '1') and s4_ack = s4_ready_t then
                 s4_ready_t <= not s4_ready_t;
             end if;
 
