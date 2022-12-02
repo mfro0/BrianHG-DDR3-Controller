@@ -168,10 +168,6 @@ architecture rtl of ddr3_cmd_sequencer is
     signal load_vect            : std_ulogic := '0';
     signal vect_data_dl         : vec_t := (others => '0');
 
-    type cal_data_type is array(CAL_WIDTH - 1 downto 0) of std_ulogic;
-    type cal_pat_type is array(DDR3_RWDQ_BITS / cal_data_type'length - 1 downto 0) of cal_data_type;
-    variable cal_data           : cal_pat_type;
-
 begin -- architecture
     p_comb : process(all)
     begin
@@ -317,6 +313,11 @@ begin -- architecture
             end case;
         end procedure send_cmd;
 
+        type cal_data_type is array(CAL_WIDTH - 1 downto 0) of std_ulogic;
+        type cal_pat_type is array(DDR3_RWDQ_BITS / cal_data_type'length - 1 downto 0) of cal_data_type;
+        variable cal_data           : cal_pat_type;
+        variable l, r               : natural;
+
     begin
         wait until rising_edge(clk);
         reset_latch <= reset;
@@ -334,13 +335,16 @@ begin -- architecture
         end if;
 
         for i in 0 to 3 loop
-            cal_data := out_read_data_p()
-            if out_read_data_p(i * 2 * CAL_WIDTH + CAL_WIDTH downto i * 2 * CAL_WIDTH) = '1' then
+            l := i * CAL_WIDTH * 2 + CAL_WIDTH - 1;
+            r := i * CAL_WIDTH - 1;
+
+            -- FIXME: this is a strange construct, but modelsim appears to understand it
+            if out_read_data_p(l downto r) = std_ulogic_vector(cal_data_type'(others => '1')) then
                 rcp_h(i) <= '1';
             else
                 rcp_h(i) <= '0';
             end if;
-            if out_read_data_p(i * 2 * CAL_WIDTH + CAL_WIDTH + 1 downto i * 2 * CAL_WIDTH + 1) = '1' then
+            if out_read_data_p(l downto r) = std_ulogic_vector(cal_data_type'(others => '0')) then
                 rcp_l(i) <= '0';
             else
                 rcp_l(i) <= '1';
