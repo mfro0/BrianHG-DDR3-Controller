@@ -52,7 +52,7 @@ entity ddr3_cmd_sequencer is
         out_idle            : out std_ulogic;                                           -- when the DDR3 has not been sent any commands, i.e. s(4).ready is always low.
 
         read_cal_pat_t      : out std_ulogic;                                           -- toggles after every read once the read_cal_pat_v data is valid.
-        read_cal_pat_v      : out std_ulogic                                            -- valid read cal pattern detected in read.
+        read_cal_pat_valid  : out std_ulogic                                            -- valid read cal pattern detected in read.
     );
 end entity ddr3_cmd_sequencer;
 
@@ -353,9 +353,9 @@ begin -- architecture
             -- TODO: translate that mess
         end loop;
         if rcp_h = "1111" and rcp_l = "1111" then
-            read_cal_pat_v <= '1';
+            read_cal_pat_valid <= '1';
         else 
-            read_cal_pat_v <= '0';
+            read_cal_pat_valid <= '0';
         end if;
 
         --
