@@ -313,9 +313,8 @@ begin -- architecture
             end case;
         end procedure send_cmd;
 
-        type cal_data_type is array(CAL_WIDTH - 1 downto 0) of std_ulogic;
+        subtype cal_data_type is std_ulogic_vector(CAL_WIDTH - 1 downto 0);
         type cal_pat_type is array(DDR3_RWDQ_BITS / cal_data_type'length - 1 downto 0) of cal_data_type;
-        variable cal_data           : cal_pat_type;
         variable l, r               : natural;
 
     begin
@@ -338,13 +337,12 @@ begin -- architecture
             l := i * CAL_WIDTH * 2 + CAL_WIDTH - 1;
             r := i * CAL_WIDTH - 1;
 
-            -- FIXME: this is a strange construct, but modelsim appears to understand it
-            if out_read_data_p(l downto r) = std_ulogic_vector(cal_data_type'(others => '1')) then
+            if out_read_data_p(l downto r) = cal_data_type'(others => '1') then
                 rcp_h(i) <= '1';
             else
                 rcp_h(i) <= '0';
             end if;
-            if out_read_data_p(l downto r) = std_ulogic_vector(cal_data_type'(others => '0')) then
+            if out_read_data_p(l downto r) = cal_data_type'(others => '0') then
                 rcp_l(i) <= '0';
             else
                 rcp_l(i) <= '1';
