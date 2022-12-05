@@ -670,6 +670,7 @@ set_global_assignment -name TIMING_ANALYZER_MULTICORNER_ANALYSIS ON
 set_global_assignment -name VHDL_INPUT_VERSION VHDL_2008
 set_global_assignment -name VHDL_SHOW_LMF_MAPPING_MESSAGES OFF
 set_global_assignment -name ALLOW_POWER_UP_DONT_CARE OFF
+set_global_assignment -name VHDL_FILE ../BrianHG_DDR3/ddr3_cmd_sequencer.vhd
 set_global_assignment -name VHDL_FILE ellipse_generator.vhd
 set_global_assignment -name VERILOG_FILE ../BrianHG_DDR3/sync_rs232_uart.v
 set_global_assignment -name VERILOG_FILE ../BrianHG_DDR3/rs232_DEBUGGER.v
@@ -677,7 +678,6 @@ set_global_assignment -name SYSTEMVERILOG_FILE BrianHG_DDR3_DECA_top.sv
 set_global_assignment -name SDC_FILE BrianHG_DDR3_DECA.sdc
 set_global_assignment -name SYSTEMVERILOG_FILE ../BrianHG_DDR3/BrianHG_DDR3_PLL.sv
 set_global_assignment -name SYSTEMVERILOG_FILE ../BrianHG_DDR3/BrianHG_DDR3_PHY_SEQ.sv
-set_global_assignment -name SYSTEMVERILOG_FILE ../BrianHG_DDR3/BrianHG_DDR3_CMD_SEQUENCER.sv
 set_global_assignment -name SYSTEMVERILOG_FILE ../BrianHG_DDR3/BrianHG_DDR3_FIFOs.sv
 set_global_assignment -name SYSTEMVERILOG_FILE ../BrianHG_DDR3/BrianHG_DDR3_IO_PORT_ALTERA.sv
 set_global_assignment -name SYSTEMVERILOG_FILE ../BrianHG_DDR3/BrianHG_DDR3_GEN_tCK.sv

@@ -184,7 +184,7 @@ architecture sim of ddr3_cmd_sequencer_tb is
             in_ena                  : in std_ulogic;
             in_busy                 : out std_ulogic;
             in_wena                 : in std_ulogic;
-            in_bank                 : natural;
+            in_bank                 : in std_ulogic_vector(DDR3_WIDTH_BANK - 1 downto 0);
             in_ras                  : in std_ulogic_vector(DDR3_WIDTH_ROW - 1 downto 0);
 
             in_cas                  : in std_ulogic_vector(DDR3_WIDTH_CAS - 1 downto 0);
@@ -291,7 +291,68 @@ begin -- architecture
         signal read_cal_pat_t,
                read_cal_pat_v       : std_ulogic;
         signal out_read_data        : std_ulogic_vector(DDR3_RWDQ_BITS - 1 downto 0);
+
+        signal sv_out_txb           : std_ulogic_vector(out_txb'range);
+        signal sv_out_read_ready    : std_ulogic;
+        signal sv_out_read_data     : std_ulogic_vector(out_read_data'range);
+        signal sv_read_cal_pat_v    : std_ulogic;
+        signal sv_read_cal_pat_t    : std_ulogic;
+        signal sv_in_busy           : std_ulogic;
+        signal sv_cmd_ready         : std_ulogic;
+        signal sv_cmd_cmd           : std_ulogic_vector(cmd_cmd'range);
+        signal sv_cmd_a             : std_ulogic_vector(cmd_a'range);
+        signal sv_cmd_wdata         : std_ulogic_vector(cmd_wdata'range);
+        signal sv_cmd_bank          : std_ulogic_vector(cmd_bank'range);
+        signal sv_cmd_wmask         : std_ulogic_vector(cmd_wmask'range);
+        signal sv_cmd_vector        : std_ulogic_vector(cmd_vector'range);
+        signal sv_ref_ack           : std_ulogic;
+        signal sv_idle              : std_ulogic;
     begin
+        assert out_txb = sv_out_txb report "out_txb /= sv_out_txb" & " (" & 
+                                           to_string(out_txb) & " /= " &
+                                           to_string(sv_out_txb) & ")" severity error;
+        assert out_read_ready = sv_out_read_ready report "out_read_ready /= sv_out_read_ready" & " (" &
+                                                         to_string(out_read_ready) & " /= " &
+                                                         to_string(sv_out_read_ready) & ")" severity error;
+        assert out_read_data = sv_out_read_data report "out_read_data /= sv_out_read_data" & " (" & 
+                                           to_string(out_read_data) & " /= " &
+                                           to_string(sv_out_read_data) & ")" severity error;
+        assert read_cal_pat_v = sv_read_cal_pat_v report "read_cal_pat_v /= sv_read_cal_pat_v" & " (" &
+                                                         to_string(read_cal_pat_v) & " /= " &
+                                                         to_string(sv_read_cal_pat_v) & ")" severity error;
+        assert read_cal_pat_t = sv_read_cal_pat_t report "read_cal_pat_t /= sv_read_cal_pat_t" & " (" &
+                                                         to_string(read_cal_pat_t) & " /= " &
+                                                         to_string(sv_read_cal_pat_t) & ")" severity error;
+        assert in_busy = sv_in_busy report "in_busy /= in_busy" & " (" &
+                                                         to_string(in_busy) & " /= " &
+                                                         to_string(sv_in_busy) & ")" severity error;
+        assert cmd_ready = sv_cmd_ready report "cmd_ready /= sv_cmd_ready" & " (" &
+                                                         to_string(cmd_ready) & " /= " &
+                                                         to_string(sv_cmd_ready) & ")" severity error;
+        assert cmd_cmd = sv_cmd_cmd report "cmd_cmd /= sv_cmd_cmd" & " (" &
+                                                         to_string(cmd_cmd) & " /= " &
+                                                         to_string(sv_cmd_cmd) & ")" severity error;
+        assert cmd_a = sv_cmd_a report "cmd_a /= sv_cmd_a" & " (" &
+                                                         to_string(cmd_a) & " /= " &
+                                                         to_string(sv_cmd_a) & ")" severity error;
+        assert cmd_wdata = sv_cmd_wdata report "cmd_wdata /= sv_cmd_wdata" & " (" &
+                                                         to_string(cmd_wdata) & " /= " &
+                                                         to_string(sv_cmd_wdata) & ")" severity error;
+        assert cmd_bank = sv_cmd_bank report "cmd_bank /= sv_cmd_bank" & " (" &
+                                                         to_string(cmd_bank) & " /= " &
+                                                         to_string(sv_cmd_bank) & ")" severity error;
+        assert cmd_wmask = sv_cmd_wmask report "cmd_wmask /= sv_cmd_wmask" & " (" &
+                                                         to_string(cmd_wmask) & " /= " &
+                                                         to_string(sv_cmd_wmask) & ")" severity error;
+        assert cmd_vector = sv_cmd_vector report "cmd_vector /= sv_cmd_vector" & " (" &
+                                                         to_string(cmd_vector) & " /= " &
+                                                         to_string(sv_cmd_vector) & ")" severity error;
+        assert ref_ack = sv_ref_ack report "ref_ack /= sv_ref_ack" & " (" &
+                                                         to_string(ref_ack) & " /= " &
+                                                         to_string(sv_ref_ack) & ")" severity error;
+        assert idle = sv_idle report "idle /= sv_idle" & " (" &
+                                                         to_string(idle) & " /= " &
+                                                         to_string(sv_idle) & ")" severity error;     
         i_cmd_ack <= cmd_ack;
         -- i_cmd_sequencer : BrianHG_DDR3_CMD_SEQUENCER
         i_cmd_sequencer : entity work.ddr3_cmd_sequencer
@@ -310,7 +371,7 @@ begin -- architecture
                 reset                   => rst_in,
                 clk                     => cmd_clk,
                 in_ena                  => in_ena,
-                in_busy                 => in_busy,
+                in_busy                 => sv_in_busy,
                 in_wena                 => in_wena,
                 in_bank                 => in_bank,
                 in_ras                  => in_ras,
@@ -319,23 +380,67 @@ begin -- architecture
                 in_wmask                => in_wmask,
                 in_rd_vector            => in_rd_vector,
                 out_ack                 => i_cmd_ack,
+                out_ready               => sv_cmd_ready,
+                out_cmd                 => sv_cmd_cmd,
+                out_txb                 => out_txb,
+                out_bank                => sv_cmd_bank,
+                out_a                   => sv_cmd_a,
+                out_wdata               => sv_cmd_wdata,
+                out_wmask               => sv_cmd_wmask,
+                in_read_rdy_t           => 'Z',
+                in_read_data            => (others => 'Z'),
+                out_read_ready          => out_read_ready,
+                out_read_data           => out_read_data,
+                out_rd_vector           => sv_cmd_vector,
+                in_refresh_t            => ref_req,
+                out_refresh_ack         => sv_ref_ack,
+                out_idle                => sv_idle,
+                read_cal_pat_t          => read_cal_pat_t,
+                read_cal_pat_valid      => read_cal_pat_v
+            );
+        
+        i_BrianHG_DDR3_CMD_SEQUENCER  : BrianHG_DDR3_CMD_SEQUENCER
+            generic map
+            (
+                USE_TOGGLE_ENA          => false,
+                USE_TOGGLE_OUT          => false,
+                DDR3_WIDTH_BANK         => DDR3_WIDTH_BANK,
+                DDR3_WIDTH_ROW          => DDR3_WIDTH_ADDR,
+                DDR3_WIDTH_CAS          => DDR3_WIDTH_CAS,
+                DDR3_RWDQ_BITS          => DDR3_RWDQ_BITS,
+                PORT_VECTOR_SIZE        => PORT_VECTOR_SIZE
+            )
+            port map
+            (
+                reset                   => rst_in,
+                clk                     => cmd_clk,
+                in_ena                  => in_ena,
+                in_busy                 => in_busy,
+                in_wena                 => in_wena,
+                in_bank                 => std_ulogic_vector(to_unsigned(in_bank, DDR3_WIDTH_BANK)),
+                in_ras                  => in_ras,
+                in_cas                  => in_cas,
+                in_wdata                => in_wdata,
+                in_wmask                => in_wmask,
+                in_rd_vector            => in_rd_vector,
+                out_ack                 => i_cmd_ack,
                 out_ready               => cmd_ready,
                 out_cmd                 => cmd_cmd,
-                out_txb                 => out_txb,
+                out_txb                 => sv_out_txb,
                 out_bank                => cmd_bank,
                 out_a                   => cmd_a,
                 out_wdata               => cmd_wdata,
                 out_wmask               => cmd_wmask,
                 in_read_rdy_t           => 'Z',
                 in_read_data            => (others => 'Z'),
-                out_read_ready          => out_read_ready,
-                out_read_data           => out_read_data,
+                out_read_ready          => sv_out_read_ready,
+                out_read_data           => sv_out_read_data,
                 out_rd_vector           => cmd_vector,
                 in_refresh_t            => ref_req,
                 out_refresh_ack         => ref_ack,
                 out_idle                => idle,
-                read_cal_pat_t          => read_cal_pat_t,
-                read_cal_pat_valid      => read_cal_pat_v
+                read_cal_pat_t          => sv_read_cal_pat_t,
+                read_cal_pat_v          => sv_read_cal_pat_v
             );
     end block b_cmd_sequencer;
 

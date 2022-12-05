@@ -468,15 +468,17 @@ logic PHY_RDATA_t_dly;
 always @(posedge DDR_CLK_50) PHY_RDATA_t_dly <= PHY_RDATA_t ;
 
 
-BrianHG_DDR3_CMD_SEQUENCER #(
-.USE_TOGGLE_ENA      ( USE_TOGGLE_CONTROLS ),     // When enabled, the (IN_ENA/IN_BUSY) & (OUT_READ_READY) toggle state to define the next command.
-.USE_TOGGLE_OUT      ( 0                   ),     // When enabled, the (OUT_READY) & (OUT_ACK) use toggle state to define the next command.
+// BrianHG_DDR3_CMD_SEQUENCER #(
+ddr3_cmd_sequencer #(
+.USE_TOGGLE_ENA      ("true"), //)( USE_TOGGLE_CONTROLS ),     // When enabled, the (IN_ENA/IN_BUSY) & (OUT_READ_READY) toggle state to define the next command.
+.USE_TOGGLE_OUT      ("false"), //( 0                   ),     // When enabled, the (OUT_READY) & (OUT_ACK) use toggle state to define the next command.
 .DDR3_WIDTH_BANK     ( DDR3_WIDTH_BANK     ),     // Use for the number of bits to address each bank.
 .DDR3_WIDTH_ROW      ( DDR3_WIDTH_ADDR     ),     // Use for the number of bits to address each row.
 .DDR3_WIDTH_CAS      ( DDR3_WIDTH_CAS      ),     // Use for the number of bits to address each column.
 .DDR3_RWDQ_BITS      ( DDR3_RWDQ_BITS      ),     // Must equal to total bus width across all DDR3 ram chips *8.
 .PORT_VECTOR_SIZE    ( PORT_VECTOR_SIZE    ),     // Set the width of the SEQ_RDATA_VECT_IN & SEQ_RDATA_VECT_OUT port, 1 through 64.
-.BHG_EXTRA_SPEED     ( BHG_EXTRA_SPEED     )      // 1 = force read vector FIFO in logic cells, 0 = Allow compiler to infer vector FIFO into ram-blocks.
+//.BHG_EXTRA_SPEED     ( BHG_EXTRA_SPEED     )      // 1 = force read vector FIFO in logic cells, 0 = Allow compiler to infer vector FIFO into ram-blocks.
+.EXTRA_SPEED ("TRUE")
 ) CMD_SEQ (
 .reset               ( !SEQ_CAL_PASSl2    ),     // The vector output fails if this module isn't reset during DDR3 initialization.
 .CLK                 ( DDR_CLK_50         ),
@@ -510,7 +512,8 @@ BrianHG_DDR3_CMD_SEQUENCER #(
 .OUT_IDLE            ( CMD_IDLE           ),
 
 .READ_CAL_PAT_t      ( READ_CAL_PAT_t     ),    // Toggles after every read once the READ_CAL_PAT_v data is valid.
-.READ_CAL_PAT_v      ( READ_CAL_PAT_v     )     // Valid read cal pattern detected in read.
+//.READ_CAL_PAT_v      ( READ_CAL_PAT_v     )     // Valid read cal pattern detected in read.
+.read_cal_pat_valid (READ_CAL_PAT_v)
 );
 
  

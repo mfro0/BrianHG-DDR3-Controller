@@ -172,7 +172,6 @@ architecture rtl of ddr3_cmd_sequencer is
     signal vwpos, vrpos         : natural range 0 to 15;
     signal load_vect            : std_ulogic := '0';
     signal vect_data_dl         : vec_t := (others => '0');
-
 begin -- architecture
     p_comb : process(all)
     begin
@@ -322,7 +321,7 @@ begin -- architecture
         type cal_pat_type is array(DDR3_RWDQ_BITS / cal_data_type'length - 1 downto 0) of cal_data_type;
         variable l, r               : natural;
 
-    begin
+    begin   -- process p_comb
         wait until rising_edge(clk);
         reset_latch <= reset;
         reset_latch2 <= reset_latch;
@@ -419,8 +418,9 @@ begin -- architecture
             elsif idle_counter < 31 then
                 idle_counter <= idle_counter + 1;
             end if;
-            out_idle <= '0' when idle_counter < 31 else '1';
-
+            -- still does not work in Quartus 20.1
+            -- out_idle <= '0' when idle_counter < 31 else '1';
+            if idle_counter < 31 then out_idle <= '0'; else out_idle <= '1'; end if;
             -- latch refresh request.
             in_ref_lat <= in_refresh_t;
 
