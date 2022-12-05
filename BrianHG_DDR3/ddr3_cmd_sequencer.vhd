@@ -267,7 +267,7 @@ begin -- architecture
         out_read_ready <= out_read_ready_p;
     end generate gen;
 
-    p_pipeline : process(all)
+    p_pipeline : process
         procedure set_cas is
         begin
             out_a(9 downto 0) <= s(3).cas(9 downto 0);      -- column address at the beginning of a sequential burst
