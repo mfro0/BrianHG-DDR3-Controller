@@ -1,5 +1,11 @@
 onerror {resume}
 quietly WaveActivateNextPane {} 0
+add wave -noupdate /ddr3_cmd_sequencer_tb/cmd_clk
+add wave -noupdate /ddr3_cmd_sequencer_tb/b_cmd_sequencer/i_cmd_sequencer/reset_latch
+add wave -noupdate /ddr3_cmd_sequencer_tb/b_cmd_sequencer/i_BrianHG_DDR3_CMD_SEQUENCER/reset_latch
+add wave -noupdate /ddr3_cmd_sequencer_tb/b_cmd_sequencer/i_cmd_sequencer/reset_latch2
+add wave -noupdate /ddr3_cmd_sequencer_tb/b_cmd_sequencer/i_BrianHG_DDR3_CMD_SEQUENCER/reset_latch2
+add wave -noupdate -divider out_txb
 add wave -noupdate /ddr3_cmd_sequencer_tb/b_cmd_sequencer/out_txb
 add wave -noupdate /ddr3_cmd_sequencer_tb/b_cmd_sequencer/sv_out_txb
 add wave -noupdate -divider out_read_ready
@@ -45,9 +51,9 @@ add wave -noupdate -divider idle
 add wave -noupdate /ddr3_cmd_sequencer_tb/idle
 add wave -noupdate /ddr3_cmd_sequencer_tb/b_cmd_sequencer/sv_idle
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {2500000 ps} 0}
+WaveRestoreCursors {{Cursor 1} {93749424 ps} 0}
 quietly wave cursor active 1
-configure wave -namecolwidth 455
+configure wave -namecolwidth 650
 configure wave -valuecolwidth 100
 configure wave -justifyvalue left
 configure wave -signalnamewidth 0
@@ -61,4 +67,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ns
 update
-WaveRestoreZoom {2499658 ps} {2500342 ps}
+WaveRestoreZoom {2143 ps} {2625 ps}

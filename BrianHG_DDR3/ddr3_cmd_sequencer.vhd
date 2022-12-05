@@ -18,32 +18,32 @@ entity ddr3_cmd_sequencer is
     );
     port
     (
-        reset               : in std_ulogic;
-        clk                 : in std_ulogic;
+        reset               : in std_ulogic := '0';
+        clk                 : in std_ulogic := '0';
 
-        in_ena              : in std_ulogic;
-        in_busy             : out std_ulogic;
+        in_ena              : in std_ulogic := '0';
+        in_busy             : out std_ulogic := '0';
 
-        in_wena             : in std_ulogic;
-        in_bank             : in natural range 0 to 2 ** DDR3_WIDTH_BANK - 1;
-        in_ras              : in std_ulogic_vector(DDR3_WIDTH_ROW - 1 downto 0);
-        in_cas              : in std_ulogic_vector(DDR3_WIDTH_CAS - 1 downto 0);
-        in_wdata            : in std_ulogic_vector(DDR3_RWDQ_BITS - 1 downto 0);
-        in_wmask            : in std_ulogic_vector(DDR3_RWDQ_BITS / 8 - 1 downto 0);
-        in_rd_vector        : in std_ulogic_vector(PORT_VECTOR_SIZE - 1 downto 0);
-        in_refresh_t        : in std_ulogic;                                            -- invert/toggle this input once every time a refresh request is required
+        in_wena             : in std_ulogic := '0';
+        in_bank             : in natural range 0 to 2 ** DDR3_WIDTH_BANK - 1 := 0;
+        in_ras              : in std_ulogic_vector(DDR3_WIDTH_ROW - 1 downto 0) := (others => '0');
+        in_cas              : in std_ulogic_vector(DDR3_WIDTH_CAS - 1 downto 0) := (others => '0');
+        in_wdata            : in std_ulogic_vector(DDR3_RWDQ_BITS - 1 downto 0) := (others => '0');
+        in_wmask            : in std_ulogic_vector(DDR3_RWDQ_BITS / 8 - 1 downto 0) := (others => '0');
+        in_rd_vector        : in std_ulogic_vector(PORT_VECTOR_SIZE - 1 downto 0) := (others => '0');
+        in_refresh_t        : in std_ulogic := '0';                                     -- invert/toggle this input once every time a refresh request is required
 
-        out_ack             : in std_ulogic;                                            -- tells internal fifo to send another command.
-        out_ready           : out std_ulogic;
-        out_cmd             : out std_ulogic_vector(3 downto 0);                        -- DDR3 command out wiring order (CS#, RAS#, CAS#, WE#).
-        out_txb             : out std_ulogic_vector(7 downto 0);                        -- DDR3 command out command signal bit order (nop, zqc, rea, wri, act, pre, ref, mrs).
-        out_bank            : out std_ulogic_vector(DDR3_WIDTH_BANK - 1 downto 0);
-        out_a               : out std_ulogic_vector(DDR3_WIDTH_ROW - 1 downto 0);
-        out_wdata           : out std_ulogic_vector(DDR3_RWDQ_BITS - 1 downto 0);
-        out_wmask           : out std_ulogic_vector(DDR3_RWDQ_BITS / 8 - 1 downto 0);
+        out_ack             : in std_ulogic := '0';                                     -- tells internal fifo to send another command.
+        out_ready           : out std_ulogic := '0';
+        out_cmd             : out std_ulogic_vector(3 downto 0) := (others => '0');     -- DDR3 command out wiring order (CS#, RAS#, CAS#, WE#).
+        out_txb             : out std_ulogic_vector(7 downto 0) := (others => '0');     -- DDR3 command out command signal bit order (nop, zqc, rea, wri, act, pre, ref, mrs).
+        out_bank            : out std_ulogic_vector(DDR3_WIDTH_BANK - 1 downto 0) := (others => '0');
+        out_a               : out std_ulogic_vector(DDR3_WIDTH_ROW - 1 downto 0) := (others => '0');
+        out_wdata           : out std_ulogic_vector(DDR3_RWDQ_BITS - 1 downto 0) := (others => '0');
+        out_wmask           : out std_ulogic_vector(DDR3_RWDQ_BITS / 8 - 1 downto 0) := (others => '0');
 
-        in_read_rdy_t       : in std_ulogic;                                            -- from DDR3 IO phy module
-        in_read_data        : in std_ulogic_vector(DDR3_RWDQ_BITS - 1 downto 0);        -- from DDR3 IO phy module
+        in_read_rdy_t       : in std_ulogic := '0';                                     -- from DDR3 IO phy module
+        in_read_data        : in std_ulogic_vector(DDR3_RWDQ_BITS - 1 downto 0) := (others => '0'); -- from DDR3 IO phy module
         out_read_ready      : out std_ulogic;
         out_read_data       : out std_ulogic_vector(DDR3_RWDQ_BITS - 1 downto 0);
         out_rd_vector       : out std_ulogic_vector(PORT_VECTOR_SIZE - 1 downto 0);     -- note that the 'preserve' here ensures the data latch location of the fifo's inferred memory block used for the read vector
@@ -57,6 +57,16 @@ entity ddr3_cmd_sequencer is
 end entity ddr3_cmd_sequencer;
 
 architecture rtl of ddr3_cmd_sequencer is
+    -- is in VHDL 2008 but Quartus still doesn't support it
+    function and_reduce(sluv : std_ulogic_vector) return std_ulogic is
+        variable sul : std_ulogic := '1';
+    begin
+        for i in sluv'range loop
+            sul := sul and sluv(i);
+        end loop;
+        return sul;
+    end function and_reduce;
+
     -- multistage pipeline registers, deliberately laid out by name for visual purposes
     type pipeline_register_type is record
         wena            : std_ulogic;
@@ -95,7 +105,7 @@ architecture rtl of ddr3_cmd_sequencer is
     attribute preserve : boolean;
     attribute preserve of bank_row_mem : signal is true;
     signal bank_mem_in_compare,
-           row_in_compare       : std_ulogic_vector(DDR3_WIDTH_ROW - 1 downto 0);
+           row_in_compare       : std_ulogic_vector(DDR3_WIDTH_ROW - 1 downto 0) := (others => '0');
 
     signal s3_bank_match        : std_ulogic := '0';
     attribute preserve of s3_bank_match : signal is true;
@@ -105,7 +115,7 @@ architecture rtl of ddr3_cmd_sequencer is
     signal bank_act             : std_ulogic_vector(2 ** DDR3_WIDTH_BANK - 1 downto 0) := (others => '0');
     attribute preserve of bank_act : signal is true;
 
-    signal bank_act_any : std_ulogic;
+    signal bank_act_any : std_ulogic := '0';
     attribute preserve of bank_act_any : signal is true;
 
     signal idle_counter : natural range 0 to 31 := 0;
@@ -148,7 +158,7 @@ architecture rtl of ddr3_cmd_sequencer is
     constant TXB_ZQC        : b8 := "01000000";
     constant TXB_NOP        : b8 := "10000000";         -- device NOP + deselect
 
-    signal vect_shift_out       : std_ulogic;
+    signal vect_shift_out       : std_ulogic := '0';
     signal vect_fifo_data_out   : std_ulogic_vector(PORT_VECTOR_SIZE - 1 downto 0);
 
     signal reset_latch,
@@ -169,7 +179,7 @@ architecture rtl of ddr3_cmd_sequencer is
     type vec_mem_t is array(0 to 15) of vec_t;
     signal vector_pipe_mem      : vec_mem_t := (others => (others => '0'));
     signal out_rd_vector_int    : vec_t := (others => '0');
-    signal vwpos, vrpos         : natural range 0 to 15;
+    signal vwpos, vrpos         : natural range 0 to 15 := 0;
     signal load_vect            : std_ulogic := '0';
     signal vect_data_dl         : vec_t := (others => '0');
 begin -- architecture
@@ -257,7 +267,7 @@ begin -- architecture
         out_read_ready <= out_read_ready_p;
     end generate gen;
 
-    p_pipeline : process
+    p_pipeline : process(all)
         procedure set_cas is
         begin
             out_a(9 downto 0) <= s(3).cas(9 downto 0);      -- column address at the beginning of a sequential burst
@@ -296,7 +306,7 @@ begin -- architecture
                     out_a(10) <= '0';               -- single bank precharge
 
                 when TX_ACTIVATE =>
-                    phold <= '0';                   -- no longer needed
+                    phold <= '1';                   -- no longer needed
                     bank_act(s(3).bank) <= '1';     -- activate the selected bank
                     bank_act_any <= '1';
                     out_a <= s(3).ras;              -- which row to activate
@@ -321,7 +331,7 @@ begin -- architecture
         type cal_pat_type is array(DDR3_RWDQ_BITS / cal_data_type'length - 1 downto 0) of cal_data_type;
         variable l, r               : natural;
 
-    begin   -- process p_comb
+    begin   -- process p_pipeline
         wait until rising_edge(clk);
         reset_latch <= reset;
         reset_latch2 <= reset_latch;
@@ -351,8 +361,6 @@ begin -- architecture
             else
                 rcp_l(i) <= '1';
             end if;
-
-            -- TODO: translate that mess
         end loop;
         if rcp_h = "1111" and rcp_l = "1111" then
             read_cal_pat_valid <= '1';
@@ -480,9 +488,13 @@ begin -- architecture
             --
             if s3_load then
                 s(3) <= s(2);
+                --
+                -- invert the mask in preparation for the DDR3.
+                --
                 s(3).wmask <= s(2).wmask xor std_ulogic_vector(to_unsigned(2 ** (DDR3_RWDQ_BITS / 8) - 1,
                                                                s(3).wmask'length));
-                if bank_mem_in_compare = row_in_compare and not s(2).ref_req = '1' then 
+                -- test that the final 4 bit compare all match. Unary and is the and reduction operator                                                            
+                if and_reduce(bank_mem_in_compare xnor row_in_compare) and not s(2).ref_req then 
                     s3_bank_match <=  '1';
                 else
                     s3_bank_match <= '0';
