@@ -67,6 +67,11 @@ architecture rtl of ddr3_cmd_sequencer is
         return sul;
     end function and_reduce;
 
+    function to_stdulogic(b : boolean) return std_ulogic is
+    begin
+        return std_ulogic'val(boolean'pos(b) + std_ulogic'pos('0'));
+    end function to_stdulogic;
+
     -- multistage pipeline registers, deliberately laid out by name for visual purposes
     type pipeline_register_type is record
         wena            : std_ulogic;
@@ -425,8 +430,7 @@ begin -- architecture
                 idle_counter <= 0;
             elsif idle_counter < 32 then
                 idle_counter <= idle_counter + 1;
-                out_idle <= std_ulogic'val(boolean'pos(idle_counter >= 32) +
-                            std_ulogic'pos('0'));
+                out_idle <= to_stdulogic(idle_counter >= 32);
             end if;
             
             -- latch refresh request.
