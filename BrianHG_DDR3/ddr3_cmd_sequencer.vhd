@@ -118,7 +118,7 @@ architecture rtl of ddr3_cmd_sequencer is
     signal bank_act_any : std_ulogic := '0';
     attribute preserve of bank_act_any : signal is true;
 
-    signal idle_counter : natural range 0 to 31 := 0;
+    signal idle_counter : natural range 0 to 63 := 0;
     signal idle_reset   : std_ulogic := '0';
 
     signal ref_req,
@@ -423,12 +423,12 @@ begin -- architecture
             idle_reset <= s(2).ready;         -- make sure a refresh doesn't affect the idle timer
             if idle_reset then
                 idle_counter <= 0;
-            elsif idle_counter < 31 then
+            elsif idle_counter < 32 then
                 idle_counter <= idle_counter + 1;
+                out_idle <= std_ulogic'val(boolean'pos(idle_counter >= 32) +
+                            std_ulogic'pos('0'));
             end if;
-            -- still does not work in Quartus 20.1
-            -- out_idle <= '0' when idle_counter < 31 else '1';
-            if idle_counter < 31 then out_idle <= '0'; else out_idle <= '1'; end if;
+            
             -- latch refresh request.
             in_ref_lat <= in_refresh_t;
 
