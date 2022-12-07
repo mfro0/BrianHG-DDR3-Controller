@@ -7,7 +7,7 @@ entity ddr3_cmd_sequencer is
     (
         USE_TOGGLE_ENA      : boolean := true;  -- when enabled, the (in_ena/in_busy) & (out_read_ready) toggle state to define the next command.
         USE_TOGGLE_OUT      : boolean := true;  -- when enabled, the (out_ready) & (out_ack) use toggle state to define the next command
-        
+
         DDR3_WIDTH_BANK     : natural := 3;     -- use for the number of bits to address each bank.
         DDR3_WIDTH_ROW      : natural := 15;    -- use for the number of bits to address each row. *** 16 maximum.
         DDR3_WIDTH_CAS      : natural := 10;    -- use for the bits to address each column
@@ -48,7 +48,7 @@ entity ddr3_cmd_sequencer is
         out_read_data       : out std_ulogic_vector(DDR3_RWDQ_BITS - 1 downto 0);
         out_rd_vector       : out std_ulogic_vector(PORT_VECTOR_SIZE - 1 downto 0);     -- note that the 'preserve' here ensures the data latch location of the fifo's inferred memory block used for the read vector
 
-        out_refresh_ack     : out std_ulogic;                                           -- once this outpput has become = to the in_refresh_t input, a refresh has been done.
+        out_refresh_ack     : out std_ulogic := '0';                                    -- once this outpput has become = to the in_refresh_t input, a refresh has been done.
         out_idle            : out std_ulogic;                                           -- when the DDR3 has not been sent any commands, i.e. s(4).ready is always low.
 
         read_cal_pat_t      : out std_ulogic;                                           -- toggles after every read once the read_cal_pat_v data is valid.
@@ -67,6 +67,7 @@ architecture rtl of ddr3_cmd_sequencer is
         return sul;
     end function and_reduce;
 
+    -- convert boolean false/true into std_ulogic '0'/'1'
     function to_stdulogic(b : boolean) return std_ulogic is
     begin
         return std_ulogic'val(boolean'pos(b) + std_ulogic'pos('0'));
@@ -142,13 +143,13 @@ architecture rtl of ddr3_cmd_sequencer is
            s4_ack_t     : std_ulogic := '0';
 
     subtype b4 is std_ulogic_vector(3 downto 0);
-    constant CMD_MRS    : b4 := std_ulogic_vector(to_unsigned(0, b4'length)); 
-    constant CMD_REF    : b4 := std_ulogic_vector(to_unsigned(1, b4'length)); 
-    constant CMD_PRE    : b4 := std_ulogic_vector(to_unsigned(2, b4'length)); 
-    constant CMD_ACT    : b4 := std_ulogic_vector(to_unsigned(3, b4'length)); 
-    constant CMD_WRI    : b4 := std_ulogic_vector(to_unsigned(4, b4'length)); 
-    constant CMD_REA    : b4 := std_ulogic_vector(to_unsigned(5, b4'length)); 
-    constant CMD_ZQC    : b4 := std_ulogic_vector(to_unsigned(6, b4'length)); 
+    constant CMD_MRS    : b4 := std_ulogic_vector(to_unsigned(0, b4'length));
+    constant CMD_REF    : b4 := std_ulogic_vector(to_unsigned(1, b4'length));
+    constant CMD_PRE    : b4 := std_ulogic_vector(to_unsigned(2, b4'length));
+    constant CMD_ACT    : b4 := std_ulogic_vector(to_unsigned(3, b4'length));
+    constant CMD_WRI    : b4 := std_ulogic_vector(to_unsigned(4, b4'length));
+    constant CMD_REA    : b4 := std_ulogic_vector(to_unsigned(5, b4'length));
+    constant CMD_ZQC    : b4 := std_ulogic_vector(to_unsigned(6, b4'length));
     constant CMD_NOP    : b4 := std_ulogic_vector(to_unsigned(15, b4'length));
 
     type cmd_type is (TX_PREA_ALL, TX_REFRESH, TX_PREA, TX_ACTIVATE, TX_READ, TX_WRITE);
@@ -294,7 +295,7 @@ begin -- architecture
                     out_cmd <= CMD_REF;
                     out_txb <= TXB_REF;
                     out_refresh_ack <= in_ref_lat2;
-                
+
                 when TX_PREA_ALL =>
                     phold <= '0';                   -- no longer needed
                     out_cmd <= CMD_PRE;
@@ -302,7 +303,7 @@ begin -- architecture
                     bank_act <= (others => '0');    -- deactivate all banks
                     bank_act_any <= '0';
                     out_a(10) <= '1';               -- all bank precharge
-                
+
                 when TX_PREA =>
                     phold <= '0';                   -- no longer needed
                     out_cmd <= CMD_PRE;
@@ -317,7 +318,7 @@ begin -- architecture
                     out_a <= s(3).ras;              -- which row to activate
                     out_cmd <= CMD_ACT;
                     out_txb <= TXB_ACT;
-                
+
                 when TX_READ =>
                     phold <= '0';                   -- no longer needed
                     set_cas;                        -- output the CAS address on the DDR3 A bus
@@ -347,7 +348,7 @@ begin -- architecture
         --
         in_read_rdy_tdl <= in_read_rdy_t;       -- detect toggle change
         read_cal_pat_t <= in_read_rdy_tdl;      -- toggle the read cal pattern
-        
+
         if in_read_rdy_t /= in_read_rdy_tdl then
             out_read_data_p <= in_read_data;
         end if;
@@ -369,7 +370,7 @@ begin -- architecture
         end loop;
         if rcp_h = "1111" and rcp_l = "1111" then
             read_cal_pat_valid <= '1';
-        else 
+        else
             read_cal_pat_valid <= '0';
         end if;
 
@@ -432,7 +433,7 @@ begin -- architecture
                 idle_counter <= idle_counter + 1;
                 out_idle <= to_stdulogic(idle_counter >= 32);
             end if;
-            
+
             -- latch refresh request.
             in_ref_lat <= in_refresh_t;
 
@@ -475,7 +476,7 @@ begin -- architecture
             elsif s1_ack then
                 s(1).ready <= '0';
             end if;
-            
+
             if s2_load then
                 bank_mem_in_compare <= bank_row_mem(s(1).bank);
                 bank_row_mem(s(1).bank) <= s(1).ras;
@@ -497,8 +498,8 @@ begin -- architecture
                 --
                 s(3).wmask <= s(2).wmask xor std_ulogic_vector(to_unsigned(2 ** (DDR3_RWDQ_BITS / 8) - 1,
                                                                s(3).wmask'length));
-                -- test that the final 4 bit compare all match. Unary and is the and reduction operator                                                            
-                if and_reduce(bank_mem_in_compare xnor row_in_compare) and not s(2).ref_req then 
+                -- test that the final 4 bit compare all match. Unary and is the and reduction operator
+                if and_reduce(bank_mem_in_compare xnor row_in_compare) and not s(2).ref_req then
                     s3_bank_match <=  '1';
                 else
                     s3_bank_match <= '0';
@@ -553,7 +554,7 @@ begin -- architecture
 
             if in_read_rdy_t /= in_read_rdy_tdl then            -- read data from the DDR3 has returned a read
                 vrpos <= vrpos + 1;                             -- increment read position
-                if not USE_TOGGLE_ENA then                      
+                if not USE_TOGGLE_ENA then
                     out_read_ready_p <= '1';                    -- no toggle, turn on for 1 clock period
                 else
                     out_read_ready_p <= not out_read_ready_p;   -- toggle output mode
@@ -564,5 +565,3 @@ begin -- architecture
         end if;
     end process p_pipeline;
 end architecture rtl;
-
-
